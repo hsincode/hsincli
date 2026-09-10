@@ -3,6 +3,10 @@
 A minimal, unofficial fork of [OpenAI Codex](https://github.com/openai/codex),
 based on the stable release `rust-v0.154.0` (`codex-cli 0.154.0`).
 
+The canonical repository is [hsincode/hsin](https://github.com/hsincode/hsin),
+with `main` as the default branch. It replaces the former Codeberg repository.
+`origin` points to this GitHub repository; `upstream` points to `openai/codex`.
+
 The fork retains three changes: an independent `~/.hsin` home, configurable
 subagent history inheritance, and HsinCLI command/session branding. Rendering,
 themes, input controls, and stream processing follow the upstream release.

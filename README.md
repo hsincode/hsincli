@@ -1,4 +1,4 @@
-> **HsinCLI** is a minimal fork based on Codex CLI 0.154.0, with an independent
+> **[HsinCLI](https://github.com/hsincode/hsin)** is a minimal fork based on Codex CLI 0.154.0, with an independent
 > `~/.hsin` home and configurable `fork_turns`. See [HSIN.md](HSIN.md).
 
 <p align="center"><strong>Codex CLI</strong> is a coding agent from OpenAI that runs locally on your computer.
