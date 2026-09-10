@@ -837,6 +837,11 @@ impl TestCodexBuilder {
         // Keep generic tests stable when the bundled catalog default changes. Tests that need a
         // specific model can still override this with a config mutator.
         config.model = Some("gpt-5.5".to_string());
+        // Upstream fixtures exercise full-history behavior. Hsin policy tests
+        // explicitly select the restricted policy through their config mutator.
+        config.hsin.fork.allow_all = true;
+        config.hsin.fork.default_turns =
+            codex_config::hsin::ForkTurns::Mode(codex_config::hsin::ForkMode::All);
         config.cwd = cwd_override;
         config.model_provider = model_provider;
         if let Ok(path) = codex_utils_cargo_bin::cargo_bin("codex") {

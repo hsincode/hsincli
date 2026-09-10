@@ -22,6 +22,7 @@ const MAX_REASONING_EFFORT_CHARS_IN_SPAWN_AGENT_DESCRIPTION: usize = 64;
 
 #[derive(Debug, Clone)]
 pub struct SpawnAgentToolOptions {
+    pub fork_policy: codex_config::hsin::ForkPolicy,
     pub available_models: Vec<ModelPreset>,
     pub agent_type_description: String,
     pub expose_agent_type: bool,
@@ -34,6 +35,7 @@ pub struct SpawnAgentToolOptions {
 impl Default for SpawnAgentToolOptions {
     fn default() -> Self {
         Self {
+            fork_policy: codex_config::hsin::ForkPolicy::default(),
             available_models: Vec::new(),
             agent_type_description: String::new(),
             expose_agent_type: true,
@@ -71,6 +73,15 @@ pub fn create_spawn_agent_tool_v1(options: SpawnAgentToolOptions) -> ToolSpec {
     let return_value_description =
         "Returns the spawned agent id plus the user-facing nickname when available.";
     let mut properties = spawn_agent_common_properties_v1(&options.agent_type_description);
+    if !options.fork_policy.allow_all || options.fork_policy.max_turns.is_some() {
+        properties.insert(
+            "fork_context".into(),
+            JsonSchema::boolean(Some(
+                "Full-history forks are disabled by configuration. Use false or omit this field."
+                    .into(),
+            )),
+        );
+    }
     if !options.expose_agent_type {
         properties.remove("agent_type");
     }
@@ -105,6 +116,10 @@ pub fn create_spawn_agent_tool_v2(options: SpawnAgentToolOptions) -> ToolSpec {
         && !options.hide_agent_type_model_reasoning)
         .then_some(SPAWN_AGENT_INHERITED_MODEL_GUIDANCE);
     let mut properties = spawn_agent_common_properties_v2(&options.agent_type_description);
+    properties.insert(
+        "fork_turns".into(),
+        JsonSchema::string(Some(options.fork_policy.tool_description())),
+    );
     if !options.expose_agent_type {
         properties.remove("agent_type");
     }
@@ -747,7 +762,7 @@ Only call this tool for a concrete, bounded subtask that can run independently a
 It will be able to send you and other running agents messages, and its final answer will be provided to you when it finishes.
 The new agent's canonical task name will be provided to it along with the message.
 
-Note that passing `fork_turns="none"` will not pass any surrounding context to the spawned subagent, which may cause the agent to lack the context it needs to complete its task, whereas `fork_turns="all"` will provide the subagent with all surrounding context."#
+Note that passing `fork_turns="none"` will not pass any surrounding context to the spawned subagent. Give it a self-contained task. Follow the fork_turns parameter's configured default and limits."#
     );
 
     if let Some(usage_hint_text) = usage_hint_text {

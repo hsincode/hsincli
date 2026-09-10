@@ -337,8 +337,29 @@ async fn spawn_agent_uses_explorer_role_and_preserves_approval_policy() {
 }
 
 #[tokio::test]
+async fn hsin_legacy_full_history_fork_is_rejected_before_spawning() {
+    let (session, turn) = make_session_and_context().await;
+    let error = SpawnAgentHandler::default()
+        .handle(invocation(
+            Arc::new(session),
+            Arc::new(turn),
+            "spawn_agent",
+            function_payload(json!({"message": "inspect this repo", "fork_context": true})),
+        ))
+        .await
+        .err()
+        .expect("Hsin should reject the legacy full-history path");
+    assert!(
+        error
+            .to_string()
+            .contains("Full-history forks are disabled by hsin.fork")
+    );
+}
+
+#[tokio::test]
 async fn spawn_agent_fork_context_rejects_agent_type_override() {
     let (mut session, mut turn) = make_session_and_context().await;
+    Arc::make_mut(&mut turn.config).hsin.fork.allow_all = true;
     let role_name = install_role_with_model_override(&mut turn).await;
     let manager = thread_manager();
     let root = manager
@@ -373,6 +394,7 @@ async fn spawn_agent_fork_context_rejects_agent_type_override() {
 #[tokio::test]
 async fn multi_agent_v2_spawn_fork_turns_all_applies_agent_type_override() {
     let (mut session, mut turn) = make_session_and_context().await;
+    Arc::make_mut(&mut turn.config).hsin.fork.allow_all = true;
     let role_name = install_role_with_model_override(&mut turn).await;
     let manager = thread_manager();
     let root = manager
@@ -667,6 +689,7 @@ async fn spawn_agent_full_history_fork_inherits_root_service_tier() {
         .with_model("gpt-5.4".to_string(), &session.services.models_manager)
         .await;
     let mut config = (*turn.config).clone();
+    config.hsin.fork.allow_all = true;
     config.service_tier = Some(ServiceTier::Fast.request_value().to_string());
     turn.config = Arc::new(config);
     let manager = thread_manager();
@@ -717,6 +740,9 @@ async fn multi_agent_v2_full_history_fork_inherits_root_service_tier() {
         .with_model("gpt-5.4".to_string(), &session.services.models_manager)
         .await;
     let mut config = (*turn.config).clone();
+    config.hsin.fork.allow_all = true;
+    config.hsin.fork.default_turns =
+        codex_config::hsin::ForkTurns::Mode(codex_config::hsin::ForkMode::All);
     config.service_tier = Some(ServiceTier::Fast.request_value().to_string());
     config
         .features

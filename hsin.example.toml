@@ -1,0 +1,8 @@
+# HsinCLI uses ~/.hsin/config.toml. Other settings follow upstream defaults.
+[features]
+multi_agent_v2 = true
+
+[hsin.fork]
+allow_all = false
+default_turns = 1
+max_turns = 3

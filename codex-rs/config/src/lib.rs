@@ -15,6 +15,7 @@ mod diagnostics;
 mod fingerprint;
 mod hook_config;
 mod host_name;
+pub mod hsin;
 mod in_app_browser_requirements;
 mod key_aliases;
 pub mod loader;

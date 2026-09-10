@@ -57,6 +57,13 @@ async fn handle_spawn_agent(
     let turn = &step_context.turn;
     let arguments = function_arguments(payload)?;
     let args: SpawnAgentArgs = parse_arguments(&arguments)?;
+    if args.fork_context {
+        turn.config
+            .hsin
+            .fork
+            .resolve(Some("all"))
+            .map_err(FunctionCallError::RespondToModel)?;
+    }
     let role_name = args
         .agent_type
         .as_deref()

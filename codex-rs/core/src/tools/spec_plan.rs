@@ -1301,6 +1301,7 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
             registry.register_trusted_with_exposure(
                 multi_agent_v2_handler(
                     SpawnAgentHandlerV2::new(SpawnAgentToolOptions {
+                        fork_policy: turn_context.config.hsin.fork.clone(),
                         available_models: turn_context.available_models.clone(),
                         agent_type_description,
                         expose_agent_type: !turn_context.config.agent_roles.is_empty(),
@@ -1351,6 +1352,7 @@ fn add_collaboration_tools(context: &CoreToolPlanContext<'_>, registry: &mut Too
             };
             registry.add_with_exposure(
                 SpawnAgentHandler::new(SpawnAgentToolOptions {
+                    fork_policy: turn_context.config.hsin.fork.clone(),
                     available_models: turn_context.available_models.clone(),
                     agent_type_description,
                     expose_agent_type: !turn_context.config.agent_roles.is_empty(),

@@ -153,6 +153,9 @@ pub struct OrchestratorFeatureToml {
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, JsonSchema)]
 #[schemars(deny_unknown_fields)]
 pub struct ConfigToml {
+    /// HsinCLI subagent history policy.
+    #[serde(default)]
+    pub hsin: crate::hsin::HsinConfig,
     /// Optional override of model selection.
     pub model: Option<String>,
     /// Review model override used by the `/review` feature.

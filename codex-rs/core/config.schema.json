@@ -1441,6 +1441,52 @@
       ],
       "type": "string"
     },
+    "ForkMode": {
+      "enum": [
+        "none",
+        "all"
+      ],
+      "type": "string"
+    },
+    "ForkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_all": {
+          "default": false,
+          "description": "Permit full history. Disabled by default, including legacy fork_context=true.",
+          "type": "boolean"
+        },
+        "default_turns": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ForkTurns"
+            }
+          ],
+          "default": 1,
+          "description": "History inherited when fork_turns is omitted or blank: \"none\", \"all\", or N."
+        },
+        "max_turns": {
+          "default": null,
+          "description": "Optional hard limit on recent turns. Full history is also rejected when set.",
+          "format": "uint",
+          "minimum": 1.0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ForkTurns": {
+      "anyOf": [
+        {
+          "format": "uint",
+          "minimum": 1.0,
+          "type": "integer"
+        },
+        {
+          "$ref": "#/definitions/ForkMode"
+        }
+      ]
+    },
     "GhostSnapshotToml": {
       "additionalProperties": false,
       "properties": {
@@ -1895,6 +1941,23 @@
             "$ref": "#/definitions/HookStateToml"
           },
           "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "HsinConfig": {
+      "properties": {
+        "fork": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ForkPolicy"
+            }
+          ],
+          "default": {
+            "allow_all": false,
+            "default_turns": 1,
+            "max_turns": null
+          }
         }
       },
       "type": "object"
@@ -6538,6 +6601,21 @@
         }
       ],
       "description": "Lifecycle hooks configured inline in TOML plus user-level overrides."
+    },
+    "hsin": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/HsinConfig"
+        }
+      ],
+      "default": {
+        "fork": {
+          "allow_all": false,
+          "default_turns": 1,
+          "max_turns": null
+        }
+      },
+      "description": "HsinCLI subagent history policy."
     },
     "include_apps_instructions": {
       "description": "Whether to inject the `<apps_instructions>` developer block.",

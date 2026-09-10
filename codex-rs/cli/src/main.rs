@@ -111,7 +111,7 @@ use codex_protocol::protocol::AskForApproval;
 use codex_protocol::user_input::UserInput;
 use codex_terminal_detection::TerminalName;
 
-/// Codex CLI
+/// HsinCLI
 ///
 /// If no subcommand is specified, options will be forwarded to the interactive CLI.
 #[derive(Debug, Parser)]
@@ -120,11 +120,9 @@ use codex_terminal_detection::TerminalName;
     version,
     // If a sub‑command is given, ignore requirements of the default args.
     subcommand_negates_reqs = true,
-    // The executable is sometimes invoked via a platform‑specific name like
-    // `codex-x86_64-unknown-linux-musl`, but the help output should always use
-    // the generic `codex` command name that users run.
-    bin_name = "codex",
-    override_usage = "codex [OPTIONS] [PROMPT]\n       codex [OPTIONS] <COMMAND> [ARGS]"
+    // Preserve upstream's internal binary target while branding installed commands.
+    name = option_env!("HSIN_CLI_NAME").unwrap_or("hsin"),
+    bin_name = option_env!("HSIN_CLI_NAME").unwrap_or("hsin")
 )]
 struct MultitoolCli {
     #[clap(flatten)]
@@ -180,7 +178,7 @@ enum Subcommand {
     /// Generate shell completion scripts.
     Completion(CompletionCommand),
 
-    /// Update Codex to the latest version.
+    /// Show the source update procedure for Hsin.
     Update,
 
     /// Diagnose local Codex installation, config, auth, and runtime health.
@@ -959,22 +957,10 @@ fn resolve_windows_update_command_from_path(
 }
 
 fn run_update_command() -> anyhow::Result<()> {
-    #[cfg(debug_assertions)]
-    {
-        anyhow::bail!(
-            "`codex update` is not available in debug builds. Install a release build of Codex to use this command."
-        );
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        let Some(action) = codex_tui::get_update_action() else {
-            anyhow::bail!(
-                "Could not detect the Codex installation method. Please update manually: https://developers.openai.com/codex/cli/"
-            );
-        };
-        run_update_action(action)
-    }
+    // The upstream installer would replace this fork with official Codex.
+    anyhow::bail!(
+        "Hsin updates are built from source. Merge upstream in your Hsin checkout, run `make check` and `make test`, then `make install`. See HSIN.md."
+    )
 }
 
 fn run_execpolicycheck(cmd: ExecPolicyCheckCommand) -> anyhow::Result<()> {
@@ -2984,7 +2970,7 @@ fn merge_interactive_cli_flags(interactive: &mut TuiCli, subcommand_cli: TuiCli)
 
 fn print_completion(cmd: CompletionCommand) {
     let mut app = MultitoolCli::command();
-    let name = "codex";
+    let name = app.get_name().to_owned();
     generate(cmd.shell, &mut app, name, &mut std::io::stdout());
 }
 
@@ -3681,20 +3667,21 @@ mod tests {
 
     #[test]
     fn plugin_marketplace_help_uses_plugin_namespace() {
+        let name = MultitoolCli::command().get_name().to_owned();
         let help = help_from_args(&["codex", "plugin", "marketplace", "--help"]);
         assert!(
-            help.contains("Usage: codex plugin marketplace [OPTIONS] <COMMAND>"),
+            help.contains(&format!(
+                "Usage: {name} plugin marketplace [OPTIONS] <COMMAND>"
+            )),
             "{help}"
         );
 
-        for (subcommand, usage) in [
-            ("add", "Usage: codex plugin marketplace add"),
-            ("list", "Usage: codex plugin marketplace list"),
-            ("upgrade", "Usage: codex plugin marketplace upgrade"),
-            ("remove", "Usage: codex plugin marketplace remove"),
-        ] {
+        for subcommand in ["add", "list", "upgrade", "remove"] {
             let help = help_from_args(&["codex", "plugin", "marketplace", subcommand, "--help"]);
-            assert!(help.contains(usage), "{help}");
+            assert!(
+                help.contains(&format!("Usage: {name} plugin marketplace {subcommand}")),
+                "{help}"
+            );
         }
     }
 

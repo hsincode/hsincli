@@ -112,7 +112,7 @@ async fn handle_spawn_agent(
     let turn = &step_context.turn;
     let arguments = function_arguments(payload)?;
     let args: SpawnAgentArgs = parse_arguments(&arguments)?;
-    let fork_mode = args.fork_mode()?;
+    let fork_mode = args.fork_mode(&turn.config.hsin.fork)?;
     let message = message_content(args.message)?;
     let role_name = args
         .agent_type
@@ -288,39 +288,26 @@ struct SpawnAgentArgs {
 }
 
 impl SpawnAgentArgs {
-    fn fork_mode(&self) -> Result<Option<SpawnAgentForkMode>, FunctionCallError> {
+    fn fork_mode(
+        &self,
+        policy: &codex_config::hsin::ForkPolicy,
+    ) -> Result<Option<SpawnAgentForkMode>, FunctionCallError> {
         if self.fork_context.is_some() {
             return Err(FunctionCallError::RespondToModel(
                 "fork_context is not supported in MultiAgentV2; use fork_turns instead".to_string(),
             ));
         }
 
-        let fork_turns = self
-            .fork_turns
-            .as_deref()
-            .map(str::trim)
-            .filter(|fork_turns| !fork_turns.is_empty())
-            .unwrap_or("all");
-
-        if fork_turns.eq_ignore_ascii_case("none") {
-            return Ok(None);
+        use codex_config::hsin::ForkMode;
+        use codex_config::hsin::ForkTurns;
+        match policy
+            .resolve(self.fork_turns.as_deref())
+            .map_err(FunctionCallError::RespondToModel)?
+        {
+            ForkTurns::Mode(ForkMode::None) => Ok(None),
+            ForkTurns::Mode(ForkMode::All) => Ok(Some(SpawnAgentForkMode::FullHistory)),
+            ForkTurns::Recent(n) => Ok(Some(SpawnAgentForkMode::LastNTurns(n.get()))),
         }
-        if fork_turns.eq_ignore_ascii_case("all") {
-            return Ok(Some(SpawnAgentForkMode::FullHistory));
-        }
-
-        let last_n_turns = fork_turns.parse::<usize>().map_err(|_| {
-            FunctionCallError::RespondToModel(
-                "fork_turns must be `none`, `all`, or a positive integer string".to_string(),
-            )
-        })?;
-        if last_n_turns == 0 {
-            return Err(FunctionCallError::RespondToModel(
-                "fork_turns must be `none`, `all`, or a positive integer string".to_string(),
-            ));
-        }
-
-        Ok(Some(SpawnAgentForkMode::LastNTurns(last_n_turns)))
     }
 }
 

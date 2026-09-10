@@ -607,6 +607,8 @@ pub enum ThreadStoreConfig {
 /// Application configuration loaded from disk and merged with overrides.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Config {
+    /// Fork-local enforced subagent history limits.
+    pub hsin: codex_config::hsin::HsinConfig,
     /// Provenance for how this [`Config`] was derived (merged layers + enforced
     /// requirements).
     pub config_layer_stack: ConfigLayerStack,
@@ -4149,7 +4151,9 @@ impl Config {
         )
         .map_err(std::io::Error::from)?;
         let otel = otel::resolve_config(cfg.otel.unwrap_or_default(), &mut startup_warnings);
+        cfg.hsin.validate().map_err(std::io::Error::other)?;
         let config = Self {
+            hsin: cfg.hsin.clone(),
             model,
             service_tier,
             review_model,

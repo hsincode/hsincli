@@ -69,6 +69,9 @@ use tracing::Level;
 use tracing_test::internal::MockWriter;
 use wiremock::MockServer;
 
+#[path = "hsin_fork.rs"]
+mod hsin_fork;
+
 const SPAWN_CALL_ID: &str = "spawn-call-1";
 const MULTI_AGENT_V1_NAMESPACE: &str = "multi_agent_v1";
 const MULTI_AGENT_V2_NAMESPACE: &str = "collaboration";
