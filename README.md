@@ -1,5 +1,56 @@
-> **[HsinCLI](https://github.com/hsincode/hsincli)** is a minimal fork based on Codex CLI 0.154.0, with an independent
-> `~/.hsin` home and configurable `fork_turns`. See [HSIN.md](HSIN.md).
+ # HsinCLI
+
+OpenAI Codex CLI 0.154.0 をベースにした非公式フォークです。設定・認証・セッションを Codex から分離し、サブエージェントの履歴継承を制御できます。
+
+## 主な機能
+
+- コマンド名と表示名は `hsin`
+- デフォルトのホームは `~/.hsin`（設定、認証、セッション、app-server 状態を分離）
+- `fork_turns` で履歴を `none`、`all`、直近ターン数から選択
+- `hsin update` はソースからのビルド手順を表示
+
+## インストール
+
+```sh
+make tools
+make install
+hsin login
+hsin
+```
+
+`PREFIX=/path make install` でインストール先を、`CLI_NAME=mycli make install` でコマンド名を変更できます。開発用は `make build`、リリースビルドのみは `make release` です。
+
+## 設定
+
+ユーザー設定は `~/.hsin/config.toml` に記述します。プロジェクト固有の設定は `.codex` を使用します。
+
+```toml
+[features]
+multi_agent_v2 = true
+
+[hsin.fork]
+allow_all = false
+default_turns = 1
+max_turns = 3
+```
+
+- `default_turns`: 省略時の継承ターン数（`none`、`all`、正の整数）
+- `max_turns`: 数値指定の上限。省略すると上限なし
+- `allow_all`: `fork_turns = "all"` の許可
+
+設定例は [`hsin.example.toml`](hsin.example.toml)、詳細は [`HSIN.md`](HSIN.md) を参照してください。
+
+## 開発
+
+```sh
+cd codex-rs
+just fmt
+just test -p <変更したプロジェクト>
+```
+
+## ライセンス
+
+Apache License 2.0（[`LICENSE`](LICENSE)）。
 
 <p align="center"><strong>Codex CLI</strong> is a coding agent from OpenAI that runs locally on your computer.
 <p align="center">
