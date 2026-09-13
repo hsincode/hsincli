@@ -18,13 +18,21 @@ hsin login
 hsin
 ```
 
-`PREFIX=/path make install` でインストール先を、`CLI_NAME=mycli make install` でコマンド名を変更できます。開発用は `make build`、リリースビルドのみは `make release` です。
+`PREFIX=/path make install` でインストール先を変更できます。`hsin` と `hsincli` は同じCLIの名前です。開発用は `make build`、リリースビルドのみは `make release` です。
 
 ## 設定
 
 ユーザー設定は `~/.hsin/config.toml` に記述します。プロジェクト固有の設定は `.codex` を使用します。
 
 ```toml
+service_tier = "default"
+
+[model_service_tiers]
+gpt-5.4 = "priority"
+
+[agents]
+default_subagent_service_tier = "priority"
+
 [features]
 multi_agent_v2 = true
 
@@ -37,6 +45,11 @@ max_turns = 3
 - `default_turns`: 省略時の継承ターン数（`none`、`all`、正の整数）
 - `max_turns`: 数値指定の上限。省略すると上限なし
 - `allow_all`: `fork_turns = "all"` の許可
+- `service_tier`: 新しいターンで使う既定のサービスティア。`default`、`priority`、`flex` を指定できます（旧名 `fast` も使用可能）
+- `model_service_tiers`: モデル名ごとのサービスティア。モデル別設定が全体の `service_tier` より優先されます
+- `agents.default_subagent_service_tier`: 既定モデルで起動するサブエージェントのサービスティア
+
+サービスティアはモデルが対応している場合だけリクエストに適用されます。未設定の場合はプロバイダーとモデルの既定値が使われます。
 
 設定例は [`hsin.example.toml`](hsin.example.toml)、詳細は [`HSIN.md`](HSIN.md) を参照してください。
 
@@ -52,7 +65,7 @@ just test -p <変更したプロジェクト>
 
 Apache License 2.0（[`LICENSE`](LICENSE)）。
 
-<p align="center"><strong>Codex CLI</strong> is a coding agent from OpenAI that runs locally on your computer.
+<p align="center"><strong>HsinCLI</strong> is a local coding agent based on OpenAI Codex.
 <p align="center">
   <img src="https://github.com/openai/codex/blob/main/.github/codex-cli-splash.png" alt="Codex CLI splash" width="80%" />
 </p>
@@ -65,15 +78,15 @@ If you want Codex in your code editor (VS Code, Cursor, Windsurf), <a href="http
 
 ## Quickstart
 
-### Installing and running Codex CLI
+### Installing and running HsinCLI
 
-Run the following on Mac or Linux to install Codex CLI:
+Run the following on Mac or Linux to install HsinCLI:
 
 ```shell
 curl -fsSL https://chatgpt.com/codex/install.sh | sh
 ```
 
-Run the following on Windows to install Codex CLI:
+Run the following on Windows to install HsinCLI:
 
 ```shell
 powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"
