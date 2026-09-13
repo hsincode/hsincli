@@ -80,6 +80,11 @@ fn render_agents_config_lines(config: &Config) -> Vec<Line<'static>> {
         )
         .into(),
         format!(
+            "  - default_subagent_service_tier = {}",
+            format_optional(config.agent_default_subagent_service_tier.as_deref())
+        )
+        .into(),
+        format!(
             "  - interrupt_message = {}",
             config.agent_interrupt_message_enabled
         )
@@ -719,6 +724,7 @@ max_concurrent_threads_per_session = 7
 max_depth = -2
 default_subagent_model = "gpt-5.6-terra"
 default_subagent_reasoning_effort = "high"
+default_subagent_service_tier = "fast"
 interrupt_message = false
 "#,
         )

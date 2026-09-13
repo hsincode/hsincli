@@ -101,7 +101,7 @@ async fn handle_spawn_agent(
     if args.fork_context {
         reject_full_fork_agent_type_override(role_name)?;
     }
-    apply_requested_spawn_agent_model_overrides(
+    let uses_default_subagent_model = apply_requested_spawn_agent_model_overrides(
         &session,
         turn.as_ref(),
         &mut config,
@@ -109,10 +109,16 @@ async fn handle_spawn_agent(
         args.reasoning_effort.clone(),
     )
     .await?;
+    let default_model = config.model.clone();
     if !args.fork_context {
         apply_spawn_agent_role(&session, &mut config, role_name).await?;
     }
-    apply_spawn_agent_service_tier(&session, &mut config).await?;
+    let service_tier_source = if uses_default_subagent_model && config.model == default_model {
+        SpawnAgentServiceTierSource::DefaultSubagent
+    } else {
+        SpawnAgentServiceTierSource::Root
+    };
+    apply_spawn_agent_service_tier(&session, &mut config, service_tier_source).await?;
     apply_spawn_agent_runtime_overrides(&mut config, turn.as_ref())?;
 
     let result = Box::pin(session.services.agent_control.spawn_agent_with_metadata(

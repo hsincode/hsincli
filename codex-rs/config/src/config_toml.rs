@@ -388,6 +388,9 @@ pub struct ConfigToml {
     /// `default`, `priority`, or `flex`; legacy `fast` also works).
     pub service_tier: Option<String>,
 
+    /// Explicit service tier selections keyed by model slug.
+    pub model_service_tiers: Option<BTreeMap<String, String>>,
+
     /// Base URL for requests to ChatGPT (as opposed to the OpenAI API).
     pub chatgpt_base_url: Option<String>,
 
@@ -697,6 +700,8 @@ pub struct AgentsToml {
     pub default_subagent_model: Option<String>,
     /// Default reasoning effort for spawned subagents when the spawn call does not select one.
     pub default_subagent_reasoning_effort: Option<ReasoningEffort>,
+    /// Default service tier for spawned subagents using the default subagent model.
+    pub default_subagent_service_tier: Option<String>,
     /// Removed agent-job setting retained as a no-op for compatibility.
     #[schemars(skip)]
     pub job_max_runtime_seconds: Option<u64>,

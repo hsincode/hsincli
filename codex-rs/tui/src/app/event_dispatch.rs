@@ -2371,10 +2371,18 @@ impl App {
             }
             AppEvent::PersistServiceTierSelection { service_tier } => {
                 self.refresh_status_line();
-                self.config.service_tier = service_tier.clone();
+                let model = self.chat_widget.current_model().to_string();
+                if let Some(service_tier) = service_tier.as_ref() {
+                    self.config
+                        .model_service_tiers
+                        .insert(model.clone(), service_tier.clone());
+                } else {
+                    self.config.model_service_tiers.remove(&model);
+                }
                 self.sync_active_thread_service_tier_to_cached_session()
                     .await;
                 let edits = crate::config_update::build_service_tier_selection_edits(
+                    model.as_str(),
                     service_tier.as_deref(),
                 );
                 match self.persist_model_defaults(app_server.request_handle(), edits, "default service tier")

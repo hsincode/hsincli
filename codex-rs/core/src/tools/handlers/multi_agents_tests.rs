@@ -442,14 +442,82 @@ async fn spawn_agent_service_tier_uses_root_preference_when_root_model_cannot_su
     assert_eq!(root.thread.config_snapshot().await.service_tier, None);
 
     config.model = Some("gpt-5.4".to_string());
-    apply_spawn_agent_service_tier(root.thread.session.as_ref(), &mut config)
-        .await
-        .expect("root preference should be resolved against the child model");
+    apply_spawn_agent_service_tier(
+        root.thread.session.as_ref(),
+        &mut config,
+        SpawnAgentServiceTierSource::Root,
+    )
+    .await
+    .expect("root preference should be resolved against the child model");
 
     assert_eq!(
         config.service_tier,
         Some(ServiceTier::Fast.request_value().to_string())
     );
+}
+
+#[tokio::test]
+async fn spawn_agent_default_service_tier_only_applies_to_default_model() {
+    let (mut session, turn) = make_session_and_context().await;
+    let mut turn = turn
+        .with_model("gpt-5.4".to_string(), &session.services.models_manager)
+        .await;
+    let mut root_config = (*turn.config).clone();
+    root_config.service_tier = Some("default".to_string());
+    root_config.agent_default_subagent_model = Some("gpt-5.4".to_string());
+    root_config.agent_default_subagent_service_tier =
+        Some(ServiceTier::Fast.request_value().to_string());
+    turn.config = Arc::new(root_config.clone());
+
+    let manager = thread_manager();
+    let root = manager
+        .start_thread(StartThreadOptions::new(root_config))
+        .await
+        .expect("root thread should start");
+    session.services.agent_control = root.thread.session.services.agent_control.clone();
+    session.thread_id = root.thread_id;
+
+    let mut default_config = (*turn.config).clone();
+    let uses_default_model = apply_requested_spawn_agent_model_overrides(
+        &session,
+        &turn,
+        &mut default_config,
+        None,
+        None,
+    )
+    .await
+    .expect("default subagent model should resolve");
+    let service_tier_source = if uses_default_model {
+        SpawnAgentServiceTierSource::DefaultSubagent
+    } else {
+        SpawnAgentServiceTierSource::Root
+    };
+    apply_spawn_agent_service_tier(&session, &mut default_config, service_tier_source)
+        .await
+        .expect("default subagent service tier should resolve");
+    assert_eq!(
+        default_config.service_tier,
+        Some(ServiceTier::Fast.request_value().to_string())
+    );
+
+    let mut explicit_config = (*turn.config).clone();
+    apply_requested_spawn_agent_model_overrides(
+        &session,
+        &turn,
+        &mut explicit_config,
+        Some("gpt-5.4-mini"),
+        None,
+    )
+    .await
+    .expect("explicit subagent model should resolve");
+    apply_spawn_agent_service_tier(
+        &session,
+        &mut explicit_config,
+        SpawnAgentServiceTierSource::Root,
+    )
+    .await
+    .expect("root service tier should resolve");
+    assert_eq!(explicit_config.service_tier, Some("default".to_string()));
 }
 
 #[tokio::test]

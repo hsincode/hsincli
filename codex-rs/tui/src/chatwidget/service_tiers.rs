@@ -22,7 +22,11 @@ impl ChatWidget {
     }
 
     pub(crate) fn configured_service_tier(&self) -> Option<String> {
-        self.config.service_tier.clone()
+        self.config
+            .model_service_tiers
+            .get(self.current_model())
+            .cloned()
+            .or_else(|| self.config.service_tier.clone())
     }
 
     pub(crate) fn service_tier_update_for_core(&self) -> Option<Option<String>> {
@@ -105,6 +109,14 @@ impl ChatWidget {
     }
 
     fn set_service_tier_selection(&mut self, service_tier: Option<String>) {
+        if let Some(service_tier) = service_tier.as_ref() {
+            self.config
+                .model_service_tiers
+                .insert(self.current_model().to_string(), service_tier.clone());
+        } else {
+            let model = self.current_model().to_string();
+            self.config.model_service_tiers.remove(&model);
+        }
         self.set_service_tier(service_tier.clone());
         self.app_event_tx
             .send(AppEvent::CodexOp(AppCommand::override_turn_context(

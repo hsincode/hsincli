@@ -29,6 +29,18 @@ fn trusted_project_edit_targets_project_trust_level() {
     );
 }
 
+#[test]
+fn model_service_tier_selection_targets_quoted_model_key() {
+    assert_eq!(
+        build_service_tier_selection_edits("gpt-5.6-luna", Some("fast")),
+        vec![ConfigEdit {
+            key_path: "model_service_tiers.\"gpt-5.6-luna\"".to_string(),
+            value: serde_json::json!("fast"),
+            merge_strategy: MergeStrategy::Replace,
+        }]
+    );
+}
+
 #[tokio::test]
 async fn remote_project_trust_guards_thread_start_and_preserves_repository_decisions() -> Result<()>
 {

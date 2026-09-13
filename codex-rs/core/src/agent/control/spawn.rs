@@ -437,6 +437,12 @@ impl AgentControl {
         config.service_tier = self.root_service_tier();
         if let Some(model) = stored_model {
             config.model = Some(model);
+            if config.agent_default_subagent_model.as_deref() == config.model.as_deref() {
+                config.service_tier = config
+                    .agent_default_subagent_service_tier
+                    .clone()
+                    .or_else(|| self.root_service_tier());
+            }
         }
         if config.model_provider_id != stored_model_provider {
             config.model_provider = config

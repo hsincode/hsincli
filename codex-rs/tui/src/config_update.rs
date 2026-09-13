@@ -88,9 +88,14 @@ pub(crate) fn build_model_selection_edits(
     ]
 }
 
-pub(crate) fn build_service_tier_selection_edits(service_tier: Option<&str>) -> Vec<ConfigEdit> {
+pub(crate) fn build_service_tier_selection_edits(
+    model: &str,
+    service_tier: Option<&str>,
+) -> Vec<ConfigEdit> {
+    let escaped_model = model.replace('\\', "\\\\").replace('"', "\\\"");
+    let key_path = format!("model_service_tiers.\"{escaped_model}\"");
     let service_tier_edit = service_tier.map_or_else(
-        || clear_config_value("service_tier"),
+        || clear_config_value(key_path.clone()),
         |service_tier| {
             let config_value = if service_tier == SERVICE_TIER_DEFAULT_REQUEST_VALUE {
                 SERVICE_TIER_DEFAULT_REQUEST_VALUE
@@ -101,7 +106,7 @@ pub(crate) fn build_service_tier_selection_edits(service_tier: Option<&str>) -> 
                     None => service_tier,
                 }
             };
-            replace_config_value("service_tier", serde_json::json!(config_value))
+            replace_config_value(key_path.clone(), serde_json::json!(config_value))
         },
     );
     vec![service_tier_edit]

@@ -32,6 +32,12 @@ pub(crate) const DEFAULT_WAIT_TIMEOUT_MS: i64 = 30_000;
 pub(crate) const MAX_WAIT_TIMEOUT_MS: i64 = HARD_MAX_MULTI_AGENT_V2_TIMEOUT_MS;
 pub(crate) const MAX_SPAWN_AGENT_MODEL_OVERRIDES: usize = 5;
 
+#[derive(Clone, Copy)]
+pub(crate) enum SpawnAgentServiceTierSource {
+    DefaultSubagent,
+    Root,
+}
+
 pub(crate) fn model_supports_multi_agent_backend(
     model: &ModelPreset,
     multi_agent_version: MultiAgentVersion,
@@ -270,12 +276,16 @@ pub(crate) async fn apply_requested_spawn_agent_model_overrides(
     config: &mut Config,
     requested_model: Option<&str>,
     requested_reasoning_effort: Option<ReasoningEffort>,
-) -> Result<(), FunctionCallError> {
-    let requested_model = requested_model.or(turn.config.agent_default_subagent_model.as_deref());
+) -> Result<bool, FunctionCallError> {
+    let configured_default_model = turn.config.agent_default_subagent_model.as_deref();
+    let uses_default_model = requested_model
+        .map(|requested_model| configured_default_model == Some(requested_model))
+        .unwrap_or(true);
+    let requested_model = requested_model.or(configured_default_model);
     let requested_reasoning_effort = requested_reasoning_effort
         .or_else(|| turn.config.agent_default_subagent_reasoning_effort.clone());
     if requested_model.is_none() && requested_reasoning_effort.is_none() {
-        return Ok(());
+        return Ok(uses_default_model);
     }
 
     if let Some(requested_model) = requested_model {
@@ -307,7 +317,7 @@ pub(crate) async fn apply_requested_spawn_agent_model_overrides(
             config.model_reasoning_effort = selected_model_info.default_reasoning_level;
         }
 
-        return Ok(());
+        return Ok(uses_default_model);
     }
 
     if let Some(reasoning_effort) = requested_reasoning_effort {
@@ -319,14 +329,22 @@ pub(crate) async fn apply_requested_spawn_agent_model_overrides(
         config.model_reasoning_effort = Some(reasoning_effort);
     }
 
-    Ok(())
+    Ok(uses_default_model)
 }
 
 pub(crate) async fn apply_spawn_agent_service_tier(
     session: &Session,
     config: &mut Config,
+    service_tier_source: SpawnAgentServiceTierSource,
 ) -> Result<(), FunctionCallError> {
-    let Some(service_tier) = session.services.agent_control.root_service_tier() else {
+    let service_tier = match service_tier_source {
+        SpawnAgentServiceTierSource::DefaultSubagent => config
+            .agent_default_subagent_service_tier
+            .clone()
+            .or_else(|| session.services.agent_control.root_service_tier()),
+        SpawnAgentServiceTierSource::Root => session.services.agent_control.root_service_tier(),
+    };
+    let Some(service_tier) = service_tier else {
         config.service_tier = None;
         return Ok(());
     };

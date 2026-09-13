@@ -1,6 +1,6 @@
 ---
 source: tui/src/debug_config.rs
-assertion_line: 667
+assertion_line: 740
 expression: render_to_text(&render_agents_config_lines(&config))
 ---
 
@@ -10,4 +10,5 @@ expression: render_to_text(&render_agents_config_lines(&config))
   - max_depth = -2 (V1 only; ignored by V2)
   - default_subagent_model = gpt-5.6-terra
   - default_subagent_reasoning_effort = high
+  - default_subagent_service_tier = fast
   - interrupt_message = false

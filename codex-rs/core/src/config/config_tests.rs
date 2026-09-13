@@ -8312,6 +8312,7 @@ async fn load_config_rejects_missing_agent_role_config_file() -> std::io::Result
             max_depth: None,
             default_subagent_model: None,
             default_subagent_reasoning_effort: None,
+            default_subagent_service_tier: None,
             job_max_runtime_seconds: None,
             interrupt_message: None,
             roles: BTreeMap::from([(
@@ -9263,9 +9264,14 @@ async fn load_config_resolves_agent_controls() -> std::io::Result<()> {
             max_depth: Some(2),
             default_subagent_model: Some("gpt-5.6-terra".to_string()),
             default_subagent_reasoning_effort: Some(ReasoningEffort::High),
+            default_subagent_service_tier: Some(ServiceTier::Fast.request_value().to_string()),
             interrupt_message: Some(false),
             ..Default::default()
         }),
+        model_service_tiers: Some(BTreeMap::from([(
+            "gpt-5.6-luna".to_string(),
+            ServiceTier::Fast.request_value().to_string(),
+        )])),
         ..Default::default()
     };
 
@@ -9282,6 +9288,11 @@ async fn load_config_resolves_agent_controls() -> std::io::Result<()> {
             config.agent_max_depth,
             config.agent_default_subagent_model.as_deref(),
             config.agent_default_subagent_reasoning_effort,
+            config.agent_default_subagent_service_tier.as_deref(),
+            config
+                .model_service_tiers
+                .get("gpt-5.6-luna")
+                .map(String::as_str),
             config.agent_interrupt_message_enabled,
         ),
         (
@@ -9289,6 +9300,8 @@ async fn load_config_resolves_agent_controls() -> std::io::Result<()> {
             2,
             Some("gpt-5.6-terra"),
             Some(ReasoningEffort::High),
+            Some(ServiceTier::Fast.request_value()),
+            Some(ServiceTier::Fast.request_value()),
             false,
         )
     );
@@ -9327,6 +9340,7 @@ async fn load_config_normalizes_agent_role_nickname_candidates() -> std::io::Res
             max_depth: None,
             default_subagent_model: None,
             default_subagent_reasoning_effort: None,
+            default_subagent_service_tier: None,
             job_max_runtime_seconds: None,
             interrupt_message: None,
             roles: BTreeMap::from([(
@@ -9373,6 +9387,7 @@ async fn load_config_rejects_empty_agent_role_nickname_candidates() -> std::io::
             max_depth: None,
             default_subagent_model: None,
             default_subagent_reasoning_effort: None,
+            default_subagent_service_tier: None,
             job_max_runtime_seconds: None,
             interrupt_message: None,
             roles: BTreeMap::from([(
@@ -9413,6 +9428,7 @@ async fn load_config_rejects_duplicate_agent_role_nickname_candidates() -> std::
             max_depth: None,
             default_subagent_model: None,
             default_subagent_reasoning_effort: None,
+            default_subagent_service_tier: None,
             job_max_runtime_seconds: None,
             interrupt_message: None,
             roles: BTreeMap::from([(
@@ -9453,6 +9469,7 @@ async fn load_config_rejects_unsafe_agent_role_nickname_candidates() -> std::io:
             max_depth: None,
             default_subagent_model: None,
             default_subagent_reasoning_effort: None,
+            default_subagent_service_tier: None,
             job_max_runtime_seconds: None,
             interrupt_message: None,
             roles: BTreeMap::from([(

@@ -125,7 +125,7 @@ async fn handle_spawn_agent(
     let mut config =
         build_agent_spawn_config(&session.get_base_instructions().await, turn.as_ref())?;
     let is_full_history_fork = matches!(fork_mode, Some(SpawnAgentForkMode::FullHistory));
-    apply_requested_spawn_agent_model_overrides(
+    let uses_default_subagent_model = apply_requested_spawn_agent_model_overrides(
         &session,
         turn.as_ref(),
         &mut config,
@@ -133,6 +133,7 @@ async fn handle_spawn_agent(
         args.reasoning_effort.clone(),
     )
     .await?;
+    let default_model = config.model.clone();
     if !is_full_history_fork || role_name.is_some() {
         apply_spawn_agent_role(&session, &mut config, role_name).await?;
         if is_full_history_fork && config.developer_instructions.is_none() {
@@ -141,7 +142,12 @@ async fn handle_spawn_agent(
                 .clone_from(&turn.developer_instructions);
         }
     }
-    apply_spawn_agent_service_tier(&session, &mut config).await?;
+    let service_tier_source = if uses_default_subagent_model && config.model == default_model {
+        SpawnAgentServiceTierSource::DefaultSubagent
+    } else {
+        SpawnAgentServiceTierSource::Root
+    };
+    apply_spawn_agent_service_tier(&session, &mut config, service_tier_source).await?;
     apply_spawn_agent_runtime_overrides(&mut config, turn.as_ref())?;
 
     // Remember an applied configured default so cold reload reapplies its restrictions.

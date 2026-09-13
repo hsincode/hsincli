@@ -94,7 +94,7 @@ async fn model_default_saves_report_server_outcomes_and_target_server_profile() 
             .join("\n");
         assert_eq!(
             messages.matches("higher-priority").count(),
-            if outcome == "overridden" { 4 } else { 0 }
+            if outcome == "overridden" { 3 } else { 0 }
         );
         assert_eq!(
             messages.matches("Failed to save").count(),
@@ -115,7 +115,7 @@ async fn model_default_saves_report_server_outcomes_and_target_server_profile() 
                     model = "gpt-5.4"
                     model_reasoning_effort = "medium"
                     plan_mode_reasoning_effort = "high"
-                    service_tier = "fast"
+                    model_service_tiers = { "gpt-5.6-sol" = "fast" }
                 })
             );
         }

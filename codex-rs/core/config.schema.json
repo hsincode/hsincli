@@ -48,6 +48,10 @@
           ],
           "description": "Default reasoning effort for spawned subagents when the spawn call does not select one."
         },
+        "default_subagent_service_tier": {
+          "description": "Default service tier for spawned subagents using the default subagent model.",
+          "type": "string"
+        },
         "enabled": {
           "description": "Whether multi-agent tools are enabled. Defaults to true. An enabled `features.multi_agent_v2` setting takes precedence.",
           "type": "boolean"
@@ -6749,6 +6753,13 @@
     },
     "model_reasoning_summary": {
       "$ref": "#/definitions/ReasoningSummary"
+    },
+    "model_service_tiers": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Explicit service tier selections keyed by model slug.",
+      "type": "object"
     },
     "model_verbosity": {
       "allOf": [

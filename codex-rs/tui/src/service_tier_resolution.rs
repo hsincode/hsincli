@@ -6,11 +6,17 @@ use codex_protocol::openai_models::ModelPreset;
 pub(crate) fn configured_service_tier(
     config: &Config,
     notices: &codex_config::types::Notice,
+    model: &str,
 ) -> Option<String> {
-    config.service_tier.clone().or_else(|| {
-        (notices.fast_default_opt_out == Some(true))
-            .then(|| SERVICE_TIER_DEFAULT_REQUEST_VALUE.to_string())
-    })
+    config
+        .model_service_tiers
+        .get(model)
+        .cloned()
+        .or_else(|| config.service_tier.clone())
+        .or_else(|| {
+            (notices.fast_default_opt_out == Some(true))
+                .then(|| SERVICE_TIER_DEFAULT_REQUEST_VALUE.to_string())
+        })
 }
 
 pub(crate) fn effective_service_tier(
@@ -23,7 +29,7 @@ pub(crate) fn effective_service_tier(
         return None;
     }
 
-    let configured = configured_service_tier(config, notices);
+    let configured = configured_service_tier(config, notices, model);
     let Some(preset) = models.iter().find(|preset| preset.model == model) else {
         return configured;
     };

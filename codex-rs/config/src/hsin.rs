@@ -6,7 +6,6 @@ use serde::Serialize;
 use std::num::NonZeroUsize;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-// Ignore retired appearance settings in existing Hsin configuration files.
 #[serde(default)]
 pub struct HsinConfig {
     pub fork: ForkPolicy,

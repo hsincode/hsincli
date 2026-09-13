@@ -623,6 +623,9 @@ pub struct Config {
     /// `default` means the user explicitly selected standard routing.
     pub service_tier: Option<String>,
 
+    /// Explicit service tier selections keyed by model slug.
+    pub model_service_tiers: BTreeMap<String, String>,
+
     /// Model used specifically for review sessions.
     pub review_model: Option<String>,
 
@@ -888,6 +891,9 @@ pub struct Config {
 
     /// Default reasoning effort for spawned subagents when the spawn call does not select one.
     pub agent_default_subagent_reasoning_effort: Option<ReasoningEffort>,
+
+    /// Default service tier for spawned subagents using the default subagent model.
+    pub agent_default_subagent_service_tier: Option<String>,
 
     /// Whether to record a model-visible message when an agent turn is interrupted.
     pub agent_interrupt_message_enabled: bool,
@@ -3818,6 +3824,10 @@ impl Config {
             .agents
             .as_ref()
             .and_then(|agents| agents.default_subagent_reasoning_effort.clone());
+        let agent_default_subagent_service_tier = cfg
+            .agents
+            .as_ref()
+            .and_then(|agents| agents.default_subagent_service_tier.clone());
         let agent_interrupt_message_enabled = cfg
             .agents
             .as_ref()
@@ -3895,6 +3905,7 @@ impl Config {
                 None => Some(service_tier),
             }
         });
+        let model_service_tiers = cfg.model_service_tiers.unwrap_or_default();
 
         let compact_prompt = compact_prompt.or(cfg.compact_prompt).and_then(|value| {
             let trimmed = value.trim();
@@ -4156,6 +4167,7 @@ impl Config {
             hsin: cfg.hsin.clone(),
             model,
             service_tier,
+            model_service_tiers,
             review_model,
             model_context_window: cfg.model_context_window,
             model_auto_compact_token_limit: cfg.model_auto_compact_token_limit,
@@ -4240,6 +4252,7 @@ impl Config {
             agent_max_threads,
             agent_default_subagent_model,
             agent_default_subagent_reasoning_effort,
+            agent_default_subagent_service_tier,
             agent_max_depth,
             agent_roles,
             max_goal_token_budget: cfg
