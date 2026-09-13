@@ -1,10 +1,8 @@
 # Hsin entry points. Keep upstream's justfile and crate names intact.
-CLI_NAME ?= hsin
 PREFIX ?= $(HOME)/.local
 export CARGO_BUILD_JOBS ?= 2
 export CARGO_PROFILE_DEV_DEBUG ?= 0
 export CARGO_PROFILE_TEST_DEBUG ?= 0
-export HSIN_CLI_NAME = $(CLI_NAME)
 export NEXTEST_TEST_THREADS ?= 2
 
 .PHONY: check test build release install install-code-mode-host fmt schema fix lint tools test-tools
@@ -28,7 +26,8 @@ release:
 install: release
 	install -Dm755 codex-rs/target/release/codex "$(PREFIX)/lib/hsin/codex"
 	install -d "$(PREFIX)/bin"
-	ln -sfn ../lib/hsin/codex "$(PREFIX)/bin/$(CLI_NAME)"
+	ln -sfn ../lib/hsin/codex "$(PREFIX)/bin/hsin"
+	ln -sfn ../lib/hsin/codex "$(PREFIX)/bin/hsincli"
 
 # Optional standalone host required for code-mode execution.
 install-code-mode-host:

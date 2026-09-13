@@ -26,7 +26,7 @@ Options:
 
       --strict-config
           Error out when config.toml contains fields that are not recognized by
-          this version of Codex
+          this version of Hsin
 
       --concurrent-requests <COUNT>
           Maximum number of requests to process concurrently on each connection

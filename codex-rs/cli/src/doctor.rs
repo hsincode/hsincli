@@ -424,7 +424,7 @@ async fn build_report(
                         )
                         .detail(error.to_string())
                         .remediation(
-                            "Fix the reported authentication error, then rerun codex doctor.",
+                            "Fix the reported authentication error, then rerun hsin doctor.",
                         ),
                     })
                 },
@@ -1257,7 +1257,7 @@ fn auth_check(config: &Config) -> DoctorCheck {
             "stored credentials could not be read",
         )
         .detail(err.to_string())
-        .remediation("Fix auth storage access or run codex login again."),
+        .remediation("Fix auth storage access or run hsin login again."),
     }
 }
 

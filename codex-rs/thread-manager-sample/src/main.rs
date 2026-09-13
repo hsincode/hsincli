@@ -261,6 +261,8 @@ fn new_config(model: Option<String>, arg0_paths: Arg0DispatchPaths) -> anyhow::R
         agent_max_threads: Some(6),
         agent_default_subagent_model: None,
         agent_default_subagent_reasoning_effort: None,
+        agent_default_subagent_service_tier: None,
+        model_service_tiers: BTreeMap::new(),
         agent_interrupt_message_enabled: false,
         agent_max_depth: 1,
         agent_roles: BTreeMap::new(),

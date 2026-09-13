@@ -18,20 +18,20 @@ Rust/rustup, Python 3.11+, uv, ripgrep, and bubblewrap.
 
 ```sh
 make tools
-make install                 # release build at ~/.local/bin/hsin
+make install                 # release build with ~/.local/bin/hsin and hsincli
 hsin --version               # hsin 0.154.0
 hsin login
 hsin
 ```
 
-The executable and Code Mode host are installed together under
-`~/.local/lib/hsin`. `make install` builds and installs the release profile;
-`make release` only builds it at `codex-rs/target/release/codex`.
+The CLI is installed as `hsin` and `hsincli` under `~/.local/bin`, with the
+release binary stored under `~/.local/lib/hsin`. `make install` builds and
+installs the release profile; `make release` only builds it at
+`codex-rs/target/release/codex`.
 `make build` creates a debug executable for development. Upstream's
 `error_or_panic` panics on unexpected stream events in debug builds and logs
 them in release builds. This fork does not change that stream handling.
-`CLI_NAME=mycli` changes the installed command
-and its help/version name; `PREFIX=/some/path` changes the install prefix.
+`PREFIX=/some/path` changes the install prefix.
 Internal crate names, binaries, and protocols keep their upstream names.
 `hsin update` reports the source build procedure, protecting the fork from
 replacement by the official installer.
@@ -68,9 +68,8 @@ V1 retains its upstream boolean interface: omitted/false starts fresh;
 full-history defaults, set `allow_all=true`, `default_turns="all"`, and omit
 `max_turns`. Normal configuration layering and `-c` overrides apply.
 
-Old `[hsin]` appearance keys (`display_name`, `mascot`, `workspace`) are ignored
-and can be removed. Standard `[tui]` preferences still apply when explicitly
-configured; omit them to use upstream defaults.
+The CLI name and appearance are fixed; standard `[tui]` preferences still apply
+when explicitly configured.
 
 ## Upstream Updates
 
