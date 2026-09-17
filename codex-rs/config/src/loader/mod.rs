@@ -1724,6 +1724,13 @@ async fn discover_project_layers(
     for dir in dirs {
         let dot_codex_abs = dir.join(".codex");
         let dot_codex_uri = PathUri::from_abs_path(&dot_codex_abs);
+        // Hsin keeps its user config in ~/.hsin. When the working directory is $HOME,
+        // the upstream ~/.codex directory is a sibling config directory, not a project config.
+        if codex_home.parent() == Some(dir.as_path())
+            && codex_home.file_name().is_some_and(|name| name == ".hsin")
+        {
+            continue;
+        }
         if !fs
             .get_metadata(&dot_codex_uri, Default::default(), /*sandbox*/ None)
             .await
@@ -1784,15 +1791,7 @@ async fn discover_project_layers(
                     trust_context.credential_broker,
                     &trust_context.credential_broker_binding_env,
                 );
-                // hsin owns the user's home-level configuration; avoid a
-                // misleading Codex project warning when invoked from $HOME.
-                let home_level_hsin_config = codex_home.parent().is_some_and(|home| {
-                    cwd.as_path() == home && home.join(".hsin/config.toml").exists()
-                });
-                if disabled_reason.is_none()
-                    && !ignored_project_config_keys.is_empty()
-                    && !home_level_hsin_config
-                {
+                if disabled_reason.is_none() && !ignored_project_config_keys.is_empty() {
                     startup_warnings.push(project_ignored_config_keys_warning(
                         &dot_codex_abs,
                         &ignored_project_config_keys,

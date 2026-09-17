@@ -475,6 +475,64 @@ model_provider = "system-provider"
 }
 
 #[tokio::test]
+async fn hsin_home_does_not_load_upstream_codex_home_as_project_config() {
+    let tmp = tempdir().expect("tempdir");
+    let home = tmp.path();
+    let hsin_home = home.join(".hsin");
+    let upstream_home = home.join(".codex");
+    std::fs::create_dir_all(&hsin_home).expect("create Hsin home");
+    std::fs::create_dir_all(&upstream_home).expect("create upstream Codex home");
+
+    let project_key = TomlValue::String(project_trust_key(home)).to_string();
+    std::fs::write(
+        hsin_home.join(CONFIG_TOML_FILE),
+        format!(
+            "model = \"hsin-model\"\nmodel_reasoning_effort = \"medium\"\n\
+             [tui]\nstatus_line = [\"model-with-reasoning\"]\n\
+             [projects.{project_key}]\ntrust_level = \"trusted\"\n"
+        ),
+    )
+    .expect("write Hsin config");
+    std::fs::write(
+        upstream_home.join(CONFIG_TOML_FILE),
+        "model = \"upstream-model\"\nmodel_reasoning_effort = \"max\"\n\
+         [tui]\nstatus_line = [\"current-dir\"]\n",
+    )
+    .expect("write upstream Codex config");
+
+    let stack = load_config_layers_state(
+        &TestFileSystem,
+        &hsin_home,
+        Some(AbsolutePathBuf::from_absolute_path(home).expect("absolute home")),
+        &[],
+        LoaderOverrides::without_managed_config_for_tests(),
+        &crate::NoopThreadConfigLoader,
+    )
+    .await
+    .expect("load Hsin config layers");
+
+    assert_eq!(
+        stack.effective_config().get("model"),
+        Some(&TomlValue::String("hsin-model".to_string()))
+    );
+    assert_eq!(
+        stack
+            .effective_config()
+            .get("tui")
+            .and_then(TomlValue::as_table)
+            .and_then(|tui| tui.get("status_line")),
+        Some(&TomlValue::Array(vec![TomlValue::String(
+            "model-with-reasoning".to_string()
+        )]))
+    );
+    assert!(
+        stack
+            .all_layers_low_to_high()
+            .all(|layer| !matches!(layer.name, ConfigLayerSource::Project { .. }))
+    );
+}
+
+#[tokio::test]
 async fn ignoring_login_requirements_preserves_local_auth_backend_requirements() {
     let tmp = tempdir().expect("tempdir");
     let requirements_path = tmp.path().join("requirements.toml");
