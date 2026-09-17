@@ -50,6 +50,9 @@ See [hsin.example.toml](hsin.example.toml) for an example:
 [features]
 multi_agent_v2 = true
 
+[model_reasoning_levels]
+"gpt-5.6-luna" = ["ultra"]
+
 [hsin.fork]
 allow_all = false
 default_turns = 1
@@ -68,8 +71,33 @@ V1 retains its upstream boolean interface: omitted/false starts fresh;
 full-history defaults, set `allow_all=true`, `default_turns="all"`, and omit
 `max_turns`. Normal configuration layering and `-c` overrides apply.
 
+`model_reasoning_levels` adds reasoning levels to the catalog entry for a model,
+keyed by slug:
+
+```toml
+[model_reasoning_levels]
+"gpt-5.6-luna" = ["ultra"]
+```
+
+Under ChatGPT auth the server catalog replaces the bundled `models.json`
+entirely, so this table is applied to whichever catalog is in force rather than
+to the bundled file. It only adds levels: a level the catalog already advertises
+keeps its catalog description, an unknown slug is logged and ignored, and the
+model still has to accept the level. Ultra is worth pairing with
+`features.multi_agent_v2 = true`; on a model the catalog marks `v1`, Ultra sends
+the highest non-Ultra level and no delegation instructions.
+
 The CLI name and appearance are fixed; standard `[tui]` preferences still apply
 when explicitly configured.
+
+## Slash Commands
+
+`/effort` opens the reasoning-level picker for the model already in use, so the
+level can be changed without stepping through the model list in `/model`. It
+follows the same rules as that picker: Max and Ultra stay behind
+`More reasoning…`, Plan mode still asks where the level applies, and during a
+Luna Reserve fallback the level applies to Reserve without switching the routed
+model. Levels a model does not advertise are not offered.
 
 ## Upstream Updates
 

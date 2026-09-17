@@ -626,6 +626,9 @@ pub struct Config {
     /// Explicit service tier selections keyed by model slug.
     pub model_service_tiers: BTreeMap<String, String>,
 
+    /// Extra reasoning levels advertised for a model, keyed by model slug.
+    pub model_reasoning_levels: BTreeMap<String, Vec<ReasoningEffort>>,
+
     /// Model used specifically for review sessions.
     pub review_model: Option<String>,
 
@@ -3909,6 +3912,7 @@ impl Config {
         });
         let model_service_tiers = cfg.model_service_tiers.unwrap_or_default();
         let model_reasoning_efforts = cfg.model_reasoning_efforts.unwrap_or_default();
+        let model_reasoning_levels = cfg.model_reasoning_levels.unwrap_or_default();
 
         let compact_prompt = compact_prompt.or(cfg.compact_prompt).and_then(|value| {
             let trimmed = value.trim();
@@ -4171,6 +4175,7 @@ impl Config {
             model,
             service_tier,
             model_service_tiers,
+            model_reasoning_levels,
             review_model,
             model_context_window: cfg.model_context_window,
             model_auto_compact_token_limit: cfg.model_auto_compact_token_limit,

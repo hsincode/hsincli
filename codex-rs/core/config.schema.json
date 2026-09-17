@@ -6758,6 +6758,16 @@
       "description": "Explicit reasoning effort selections keyed by model slug.",
       "type": "object"
     },
+    "model_reasoning_levels": {
+      "additionalProperties": {
+        "items": {
+          "$ref": "#/definitions/ReasoningEffort"
+        },
+        "type": "array"
+      },
+      "description": "Extra reasoning levels advertised for a model, keyed by model slug.\n\nLevels already advertised by the catalog are ignored, so this only ever widens the choices offered by `/model` and `/effort`. The model still has to accept the level.",
+      "type": "object"
+    },
     "model_reasoning_summary": {
       "$ref": "#/definitions/ReasoningSummary"
     },

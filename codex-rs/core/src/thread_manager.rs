@@ -48,6 +48,7 @@ use codex_model_provider_info::ModelProviderInfo;
 use codex_model_provider_info::OPENAI_PROVIDER_ID;
 use codex_models_manager::manager::RefreshStrategy;
 use codex_models_manager::manager::SharedModelsManager;
+use codex_models_manager::reasoning_levels::with_reasoning_level_overrides;
 use codex_protocol::ThreadId;
 use codex_protocol::config_types::CollaborationModeMask;
 use codex_protocol::error::CodexErr;
@@ -374,10 +375,11 @@ pub fn build_models_manager(
     auth_manager: Arc<AuthManager>,
 ) -> SharedModelsManager {
     let provider = create_model_provider(config.model_provider.clone(), Some(auth_manager));
-    provider.models_manager(
+    let models_manager = provider.models_manager(
         config.codex_home.to_path_buf(),
         config.model_catalog.clone(),
-    )
+    );
+    with_reasoning_level_overrides(models_manager, &config.model_reasoning_levels)
 }
 
 pub fn thread_store_from_config(

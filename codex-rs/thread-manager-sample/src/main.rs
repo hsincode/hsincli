@@ -264,6 +264,7 @@ fn new_config(model: Option<String>, arg0_paths: Arg0DispatchPaths) -> anyhow::R
         agent_default_subagent_reasoning_effort: None,
         agent_default_subagent_service_tier: None,
         model_service_tiers: BTreeMap::new(),
+        model_reasoning_levels: BTreeMap::new(),
         agent_interrupt_message_enabled: false,
         agent_max_depth: 1,
         agent_roles: BTreeMap::new(),

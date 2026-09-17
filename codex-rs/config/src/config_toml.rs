@@ -393,6 +393,12 @@ pub struct ConfigToml {
     /// Explicit service tier selections keyed by model slug.
     pub model_service_tiers: Option<BTreeMap<String, String>>,
 
+    /// Extra reasoning levels advertised for a model, keyed by model slug.
+    ///
+    /// Levels already advertised by the catalog are ignored, so this only ever widens the
+    /// choices offered by `/model` and `/effort`. The model still has to accept the level.
+    pub model_reasoning_levels: Option<BTreeMap<String, Vec<ReasoningEffort>>>,
+
     /// Base URL for requests to ChatGPT (as opposed to the OpenAI API).
     pub chatgpt_base_url: Option<String>,
 

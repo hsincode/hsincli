@@ -9256,6 +9256,61 @@ job_max_runtime_seconds = 900
 }
 
 #[tokio::test]
+async fn load_config_resolves_model_reasoning_levels() -> std::io::Result<()> {
+    let codex_home = TempDir::new()?;
+    let cfg = toml::from_str::<ConfigToml>(
+        r#"
+[model_reasoning_levels]
+"gpt-5.6-luna" = ["ultra"]
+"#,
+    )
+    .expect("model reasoning levels should deserialize");
+
+    let config = Config::load_from_base_config_with_overrides(
+        cfg,
+        ConfigOverrides::default(),
+        codex_home.abs(),
+    )
+    .await?;
+
+    assert_eq!(
+        config.model_reasoning_levels.get("gpt-5.6-luna"),
+        Some(&vec![ReasoningEffort::Ultra])
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn load_config_resolves_model_reasoning_efforts() -> std::io::Result<()> {
+    let codex_home = TempDir::new()?;
+    let cfg = toml::from_str::<ConfigToml>(
+        r#"
+model = "gpt-5.6-luna"
+model_reasoning_efforts = { "gpt-5.6-luna" = "ultra", "gpt-5.6-sol" = "high" }
+"#,
+    )
+    .expect("model reasoning efforts should deserialize");
+
+    let config = Config::load_from_base_config_with_overrides(
+        cfg,
+        ConfigOverrides::default(),
+        codex_home.abs(),
+    )
+    .await?;
+
+    assert_eq!(
+        config.model_reasoning_efforts,
+        BTreeMap::from([
+            ("gpt-5.6-luna".to_string(), ReasoningEffort::Ultra),
+            ("gpt-5.6-sol".to_string(), ReasoningEffort::High),
+        ])
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn load_config_resolves_agent_controls() -> std::io::Result<()> {
     let codex_home = TempDir::new()?;
     let cfg = ConfigToml {

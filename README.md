@@ -7,6 +7,7 @@ OpenAI Codex CLI 0.154.0 をベースにした非公式フォークです。設�
 - コマンド名と表示名は `hsin`
 - デフォルトのホームは `~/.hsin`（設定、認証、セッション、app-server 状態を分離）
 - `fork_turns` で履歴を `none`、`all`、直近ターン数から選択
+- `/effort` で現在のモデルの推論レベルを直接選択
 - `hsin update` はソースからのビルド手順を表示
 
 ## インストール
@@ -36,6 +37,9 @@ default_subagent_service_tier = "priority"
 [features]
 multi_agent_v2 = true
 
+[model_reasoning_levels]
+"gpt-5.6-luna" = ["ultra"]
+
 [hsin.fork]
 allow_all = false
 default_turns = 1
@@ -48,8 +52,11 @@ max_turns = 3
 - `service_tier`: 新しいターンで使う既定のサービスティア。`default`、`priority`、`flex` を指定できます（旧名 `fast` も使用可能）
 - `model_service_tiers`: モデル名ごとのサービスティア。モデル別設定が全体の `service_tier` より優先されます
 - `agents.default_subagent_service_tier`: 既定モデルで起動するサブエージェントのサービスティア
+- `model_reasoning_levels`: モデルごとに追加で提示する推論レベル。カタログにあるレベルは変更しません
 
 サービスティアはモデルが対応している場合だけリクエストに適用されます。未設定の場合はプロバイダーとモデルの既定値が使われます。
+
+`model_reasoning_levels` は `/model` と `/effort` の選択肢を広げるだけで、モデル側の対応を変えるものではありません。`ultra` を追加する場合は `features.multi_agent_v2 = true` も設定してください。カタログ上 v1 のモデルでは Ultra は委譲を行わず、Max 相当の推論として送信されます。
 
 設定例は [`hsin.example.toml`](hsin.example.toml)、詳細は [`HSIN.md`](HSIN.md) を参照してください。
 
