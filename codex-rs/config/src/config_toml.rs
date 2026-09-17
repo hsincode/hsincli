@@ -709,6 +709,11 @@ pub struct AgentsToml {
     /// Default reasoning effort for spawned subagents when the spawn call does not select one.
     pub default_subagent_reasoning_effort: Option<ReasoningEffort>,
     /// Default service tier for spawned subagents using the default subagent model.
+    #[serde(
+        default,
+        deserialize_with = "crate::subagent_service_tier::deserialize"
+    )]
+    #[schemars(with = "Option<crate::subagent_service_tier::SubagentServiceTier>")]
     pub default_subagent_service_tier: Option<String>,
     /// Removed agent-job setting retained as a no-op for compatibility.
     #[schemars(skip)]

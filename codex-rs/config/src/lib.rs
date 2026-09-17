@@ -36,6 +36,7 @@ mod shell_environment_policy;
 mod skills_config;
 mod state;
 mod strict_config;
+mod subagent_service_tier;
 pub mod test_support;
 mod thread_config;
 mod tui_keymap;

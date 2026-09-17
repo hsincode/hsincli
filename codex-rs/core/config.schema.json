@@ -49,8 +49,13 @@
           "description": "Default reasoning effort for spawned subagents when the spawn call does not select one."
         },
         "default_subagent_service_tier": {
-          "description": "Default service tier for spawned subagents using the default subagent model.",
-          "type": "string"
+          "allOf": [
+            {
+              "$ref": "#/definitions/SubagentServiceTier"
+            }
+          ],
+          "default": null,
+          "description": "Default service tier for spawned subagents using the default subagent model."
         },
         "enabled": {
           "description": "Whether multi-agent tools are enabled. Defaults to true. An enabled `features.multi_agent_v2` setting takes precedence.",
@@ -3701,6 +3706,14 @@
           "type": "string"
         }
       ]
+    },
+    "SubagentServiceTier": {
+      "enum": [
+        "default",
+        "priority",
+        "flex"
+      ],
+      "type": "string"
     },
     "ThreadStoreToml": {
       "oneOf": [
