@@ -38,9 +38,14 @@ pub(super) fn resume_model_settings_for_overrides(
                     profile: Some(_),
                     ..
                 }
-        ) && ["model", "model_provider", "model_reasoning_effort"]
-            .iter()
-            .any(|key| layer.config.get(*key).is_some())
+        ) && [
+            "model",
+            "model_provider",
+            "model_reasoning_effort",
+            "model_reasoning_efforts",
+        ]
+        .iter()
+        .any(|key| layer.config.get(*key).is_some())
     });
     if harness_overrides.model.is_some()
         || harness_overrides.model_provider.is_some()
@@ -1006,11 +1011,16 @@ impl App {
         effort: ReasoningEffortConfig,
     ) -> Option<ReasoningEffortConfig> {
         let default_effort = self.default_reasoning_effort_for_conversation_model(model);
+        self.config
+            .model_reasoning_efforts
+            .insert(model.to_string(), effort.clone());
         if let Some(default_effort) = default_effort.as_ref() {
             self.config.model = Some(model.to_string());
             self.config.model_reasoning_effort = Some(default_effort.clone());
         }
         self.chat_widget.set_model(model);
+        self.chat_widget
+            .set_model_reasoning_effort_default(model, Some(effort.clone()));
         self.chat_widget.set_reasoning_effort(Some(effort.clone()));
         self.chat_widget
             .set_plan_mode_reasoning_effort(Some(effort));
@@ -1023,8 +1033,9 @@ impl App {
     ) -> Option<ReasoningEffortConfig> {
         let configured_effort = self
             .config
-            .model_reasoning_effort
-            .as_ref()
+            .model_reasoning_efforts
+            .get(model)
+            .or(self.config.model_reasoning_effort.as_ref())
             .filter(|effort| **effort != ReasoningEffortConfig::Ultra);
         let preset = self
             .model_catalog

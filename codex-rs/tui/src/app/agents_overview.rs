@@ -719,6 +719,7 @@ impl App {
                 .or_else(|| self.model_catalog.models.first())
                 .map(|model| model.model.clone());
         }
+        super::new_session::apply_model_specific_defaults(&mut config, &self.cli_kv_overrides);
         match app_server
             .start_thread_with_session_start_source(
                 &self.local_settings,

@@ -3661,7 +3661,9 @@ async fn model_reasoning_selection_popup_snapshot() {
     let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
 
     set_chatgpt_auth(&mut chat);
-    chat.set_reasoning_effort(Some(ReasoningEffortConfig::High));
+    chat.config
+        .model_reasoning_efforts
+        .insert("gpt-5.4".to_string(), ReasoningEffortConfig::High);
 
     let mut preset = get_available_model(&chat, "gpt-5.4");
     preset.supported_reasoning_efforts.insert(
@@ -4231,6 +4233,68 @@ async fn feedback_good_result_consent_popup_includes_connectivity_diagnostics_fi
 
     let popup = render_bottom_popup(&chat, /*width*/ 80);
     assert_chatwidget_snapshot!("feedback_good_result_consent_popup", popup);
+}
+
+#[tokio::test]
+async fn effort_command_opens_reasoning_levels_for_the_current_model() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+    chat.thread_id = Some(ThreadId::new());
+
+    chat.dispatch_command(crate::slash_command::SlashCommand::Effort);
+
+    let popup = render_bottom_popup(&chat, /*width*/ 80);
+    assert!(
+        popup.contains("Select Reasoning Level for gpt-5.4"),
+        "expected the reasoning popup for the current model; popup: {popup}"
+    );
+}
+
+#[tokio::test]
+async fn effort_command_reports_models_missing_from_the_catalog() {
+    let (mut chat, mut rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+    chat.thread_id = Some(ThreadId::new());
+    chat.set_model("model-missing-from-catalog");
+    let _ = drain_insert_history(&mut rx);
+
+    chat.dispatch_command(crate::slash_command::SlashCommand::Effort);
+
+    let popup = render_bottom_popup(&chat, /*width*/ 80);
+    assert!(
+        !popup.contains("Select Reasoning Level"),
+        "expected no reasoning popup; popup: {popup}"
+    );
+    let history = drain_insert_history(&mut rx)
+        .iter()
+        .map(|lines| lines_to_single_string(lines))
+        .collect::<String>();
+    assert!(
+        history.contains("Reasoning levels are unavailable for model-missing-from-catalog"),
+        "expected an unavailable notice; history: {history}"
+    );
+}
+
+#[tokio::test]
+async fn model_switch_restores_saved_reasoning_effort_for_each_model() {
+    let (mut chat, _rx, _op_rx) = make_chatwidget_manual(Some("gpt-5.4")).await;
+    chat.config
+        .model_reasoning_efforts
+        .insert("gpt-5.4".to_string(), ReasoningEffortConfig::Ultra);
+    chat.config
+        .model_reasoning_efforts
+        .insert("gpt-5.6-luna".to_string(), ReasoningEffortConfig::Low);
+
+    chat.set_model("gpt-5.6-luna");
+    let luna_effort = chat.current_reasoning_effort();
+    chat.set_model("gpt-5.4");
+    let gpt_effort = chat.current_reasoning_effort();
+
+    assert_eq!(
+        (luna_effort, gpt_effort),
+        (
+            Some(ReasoningEffortConfig::Low),
+            Some(ReasoningEffortConfig::Ultra)
+        )
+    );
 }
 
 #[tokio::test]

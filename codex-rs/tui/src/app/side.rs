@@ -600,7 +600,18 @@ impl App {
         if !parent_model.trim().is_empty() {
             fork_config.model = Some(parent_model.to_string());
         }
-        fork_config.model_reasoning_effort = self.chat_widget.current_reasoning_effort();
+        let current_effort = self.chat_widget.current_reasoning_effort();
+        fork_config.model_reasoning_effort = current_effort.clone();
+        match current_effort {
+            Some(effort) => {
+                fork_config
+                    .model_reasoning_efforts
+                    .insert(parent_model.to_string(), effort);
+            }
+            None => {
+                fork_config.model_reasoning_efforts.remove(parent_model);
+            }
+        }
         fork_config.service_tier = self.chat_widget.configured_service_tier();
         fork_config.ephemeral = true;
         fork_config.developer_instructions = Some(Self::side_developer_instructions(

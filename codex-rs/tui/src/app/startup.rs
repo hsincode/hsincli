@@ -67,6 +67,7 @@ pub(super) async fn prepare_fresh_startup_config(
         cli_kv_overrides,
         harness_overrides,
     );
+    super::new_session::apply_model_specific_defaults(config, cli_kv_overrides);
     Ok(defaults.is_some())
 }
 
@@ -251,6 +252,7 @@ impl App {
                 &cli_kv_overrides,
                 &harness_overrides,
             );
+            super::new_session::apply_model_specific_defaults(&mut config, &cli_kv_overrides);
         }
         let mut model = startup_model(&config, &bootstrap, server_defaults_read);
         let available_models = bootstrap.available_models;

@@ -271,18 +271,36 @@ impl ChatWidget {
                     backend_banners::AutomaticModelSwitchState::default();
             }
         }
+        let saved_effort = self.config.model_reasoning_efforts.get(model).cloned();
         self.current_collaboration_mode = self.current_collaboration_mode.with_updates(
             Some(model.to_string()),
-            /*effort*/ None,
+            saved_effort.clone().map(Some),
             /*developer_instructions*/ None,
         );
         if self.collaboration_modes_enabled()
             && let Some(mask) = self.active_collaboration_mask.as_mut()
         {
             mask.model = Some(model.to_string());
+            if mask.mode != Some(ModeKind::Plan) {
+                mask.reasoning_effort = Some(saved_effort);
+            }
         }
         self.refresh_effective_service_tier();
         self.refresh_model_dependent_surfaces();
+    }
+
+    pub(crate) fn set_model_reasoning_effort_default(
+        &mut self,
+        model: &str,
+        effort: Option<ReasoningEffortConfig>,
+    ) {
+        if let Some(effort) = effort {
+            self.config
+                .model_reasoning_efforts
+                .insert(model.to_string(), effort);
+        } else {
+            self.config.model_reasoning_efforts.remove(model);
+        }
     }
 
     pub(crate) fn current_model(&self) -> &str {

@@ -73,11 +73,13 @@ pub(crate) fn build_model_selection_edits(
     model: &str,
     effort: Option<impl ToString>,
 ) -> Vec<ConfigEdit> {
+    let escaped_model = model.replace('\\', "\\\\").replace('"', "\\\"");
+    let effort_key_path = format!("model_reasoning_efforts.\"{escaped_model}\"");
     let effort_edit = effort.map_or_else(
-        || clear_config_value("model_reasoning_effort"),
+        || clear_config_value(effort_key_path.clone()),
         |effort| {
             replace_config_value(
-                "model_reasoning_effort",
+                effort_key_path.clone(),
                 serde_json::json!(effort.to_string()),
             )
         },

@@ -13,23 +13,23 @@ pub(crate) fn apply_managed_new_thread_defaults(
     let Some(defaults) = defaults else {
         return;
     };
-    // Managed values are defaults rather than enforcement. Preserve explicit launch choices from
-    // dedicated flags such as `-m` (`harness_overrides`) and generic `-c key=value` settings
-    // (`cli_kv_overrides`), then fill only the fields that were not selected for this invocation.
-    // Model and reasoning effort are a compatibility-sensitive pair, so an explicit override of
-    // either opts out of both managed values. For example, `codex -m gpt-5.4` keeps that model and
-    // its existing/default effort, while `-c model_reasoning_effort=low` does not switch to the
-    // managed model. Service tier remains independent and is resolved against the selected model
-    // before the thread starts.
+    // Managed values are defaults rather than enforcement. Preserve saved preferences and explicit
+    // launch choices from dedicated flags such as `-m` (`harness_overrides`) and generic
+    // `-c key=value` settings (`cli_kv_overrides`), then fill only fields with no user selection.
+    // Model and reasoning effort are a compatibility-sensitive pair, so a configured or explicit
+    // value for either opts out of both managed values. Service tier remains independent and is
+    // resolved against the selected model before the thread starts.
     let has_cli_override = |key: &str| cli_kv_overrides.iter().any(|(path, _value)| path == key);
-    let has_explicit_model_settings = harness_overrides.model.is_some()
+    let has_user_model_settings = config.model.is_some()
+        || config.model_reasoning_effort.is_some()
+        || harness_overrides.model.is_some()
         || has_cli_override("model")
         || has_cli_override("model_reasoning_effort");
 
-    if !has_explicit_model_settings && let Some(model) = defaults.model.as_ref() {
+    if !has_user_model_settings && let Some(model) = defaults.model.as_ref() {
         config.model = Some(model.clone());
     }
-    if !has_explicit_model_settings
+    if !has_user_model_settings
         && let Some(reasoning_effort) = defaults.model_reasoning_effort.as_ref()
     {
         config.model_reasoning_effort = Some(reasoning_effort.clone());

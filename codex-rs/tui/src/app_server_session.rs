@@ -1850,12 +1850,15 @@ fn config_request_overrides_from_config(
             overrides.insert(key.to_string(), serde_json::Value::String(value));
         }
     };
+    let model_reasoning_effort = config
+        .model
+        .as_deref()
+        .and_then(|model| config.model_reasoning_efforts.get(model))
+        .cloned()
+        .or_else(|| config.model_reasoning_effort.clone());
     insert(
         "model_reasoning_effort",
-        config
-            .model_reasoning_effort
-            .as_ref()
-            .map(std::string::ToString::to_string),
+        model_reasoning_effort.map(|effort| effort.to_string()),
     );
     insert(
         "model_reasoning_summary",
@@ -1903,10 +1906,18 @@ fn remove_permission_config_overrides(config: &mut Option<HashMap<String, serde_
 
 fn service_tier_override_from_config(config: &Config) -> Option<Option<String>> {
     let local_settings = LocalSettings::from(config);
-    config.service_tier.clone().map(Some).or_else(|| {
-        (local_settings.notices.fast_default_opt_out == Some(true))
-            .then(|| Some(SERVICE_TIER_DEFAULT_REQUEST_VALUE.to_string()))
-    })
+    let model_service_tier = config
+        .model
+        .as_deref()
+        .and_then(|model| config.model_service_tiers.get(model))
+        .cloned();
+    model_service_tier
+        .or_else(|| config.service_tier.clone())
+        .map(Some)
+        .or_else(|| {
+            (local_settings.notices.fast_default_opt_out == Some(true))
+                .then(|| Some(SERVICE_TIER_DEFAULT_REQUEST_VALUE.to_string()))
+        })
 }
 
 fn sandbox_mode_from_permission_profile(
@@ -3349,6 +3360,41 @@ mod tests {
         assert_eq!(start.config, Some(expected_config.clone()));
         assert_eq!(resume.config, Some(expected_config.clone()));
         assert_eq!(fork.config, Some(expected_config));
+    }
+
+    #[tokio::test]
+    async fn thread_lifecycle_params_prefer_model_specific_effort_and_service_tier() {
+        let temp_dir = tempfile::tempdir().expect("tempdir");
+        let mut config = build_config(&temp_dir).await;
+        config.model = Some("model-a".to_string());
+        config.model_reasoning_effort = Some(ReasoningEffort::Low);
+        config
+            .model_reasoning_efforts
+            .insert("model-a".to_string(), ReasoningEffort::Ultra);
+        config.service_tier = Some(ServiceTier::Flex.request_value().to_string());
+        config.model_service_tiers.insert(
+            "model-a".to_string(),
+            ServiceTier::Fast.request_value().to_string(),
+        );
+
+        let params = thread_start_params_from_config(
+            &config,
+            ThreadParamsMode::Embedded,
+            /*remote_cwd_override*/ None,
+            /*session_start_source*/ None,
+        );
+
+        assert_eq!(
+            params.service_tier,
+            Some(Some(ServiceTier::Fast.request_value().to_string()))
+        );
+        assert_eq!(
+            params
+                .config
+                .as_ref()
+                .and_then(|config| config.get("model_reasoning_effort")),
+            Some(&serde_json::Value::String("ultra".to_string()))
+        );
     }
 
     #[tokio::test]

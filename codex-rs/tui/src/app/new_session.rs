@@ -68,6 +68,31 @@ pub(super) fn overlay_new_session_defaults(
     if !has_launch_setting(config, cli_kv_overrides, "model_reasoning_effort") {
         config.model_reasoning_effort = defaults.model_reasoning_effort.clone();
     }
+    if let Some(value) = defaults.additional.get("model_reasoning_efforts")
+        && let Ok(efforts) = serde_json::from_value(value.clone())
+    {
+        config.model_reasoning_efforts = efforts;
+    }
+    if let Some(value) = defaults.additional.get("model_service_tiers")
+        && let Ok(service_tiers) = serde_json::from_value(value.clone())
+    {
+        config.model_service_tiers = service_tiers;
+    }
+}
+
+pub(super) fn apply_model_specific_defaults(
+    config: &mut Config,
+    cli_kv_overrides: &[(String, TomlValue)],
+) {
+    if has_launch_setting(config, cli_kv_overrides, "model_reasoning_effort") {
+        return;
+    }
+    let Some(model) = config.model.as_deref() else {
+        return;
+    };
+    if let Some(effort) = config.model_reasoning_efforts.get(model).cloned() {
+        config.model_reasoning_effort = Some(effort);
+    }
 }
 
 impl App {

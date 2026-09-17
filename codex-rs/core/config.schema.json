@@ -6751,6 +6751,13 @@
     "model_reasoning_effort": {
       "$ref": "#/definitions/ReasoningEffort"
     },
+    "model_reasoning_efforts": {
+      "additionalProperties": {
+        "$ref": "#/definitions/ReasoningEffort"
+      },
+      "description": "Explicit reasoning effort selections keyed by model slug.",
+      "type": "object"
+    },
     "model_reasoning_summary": {
       "$ref": "#/definitions/ReasoningSummary"
     },

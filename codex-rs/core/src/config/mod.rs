@@ -961,6 +961,8 @@ pub struct Config {
     /// Value to use for `reasoning.effort` when making a request using the
     /// Responses API.
     pub model_reasoning_effort: Option<ReasoningEffort>,
+    /// Explicit reasoning effort selections keyed by model slug.
+    pub model_reasoning_efforts: BTreeMap<String, ReasoningEffort>,
     /// Optional Plan-mode-specific reasoning effort override used by the TUI.
     ///
     /// When unset, Plan mode uses the built-in Plan preset default (currently
@@ -3906,6 +3908,7 @@ impl Config {
             }
         });
         let model_service_tiers = cfg.model_service_tiers.unwrap_or_default();
+        let model_reasoning_efforts = cfg.model_reasoning_efforts.unwrap_or_default();
 
         let compact_prompt = compact_prompt.or(cfg.compact_prompt).and_then(|value| {
             let trimmed = value.trim();
@@ -4291,6 +4294,7 @@ impl Config {
                 .unwrap_or(false),
             guardian_policy_config,
             model_reasoning_effort: cfg.model_reasoning_effort,
+            model_reasoning_efforts,
             plan_mode_reasoning_effort: cfg.plan_mode_reasoning_effort,
             model_reasoning_summary: cfg.model_reasoning_summary,
             model_catalog,

@@ -896,6 +896,7 @@ impl App {
             &self.cli_kv_overrides,
             &self.harness_overrides,
         );
+        crate::app::new_session::apply_model_specific_defaults(&mut config, &self.cli_kv_overrides);
         let summary = session_summary(
             self.chat_widget.token_usage(),
             self.chat_widget.thread_id(),

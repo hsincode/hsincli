@@ -41,6 +41,44 @@ fn model_service_tier_selection_targets_quoted_model_key() {
     );
 }
 
+#[test]
+fn model_reasoning_effort_selection_targets_quoted_model_key() {
+    assert_eq!(
+        build_model_selection_edits("gpt-5.6-luna", Some("ultra")),
+        vec![
+            ConfigEdit {
+                key_path: "model".to_string(),
+                value: serde_json::json!("gpt-5.6-luna"),
+                merge_strategy: MergeStrategy::Replace,
+            },
+            ConfigEdit {
+                key_path: "model_reasoning_efforts.\"gpt-5.6-luna\"".to_string(),
+                value: serde_json::json!("ultra"),
+                merge_strategy: MergeStrategy::Replace,
+            },
+        ]
+    );
+}
+
+#[test]
+fn clearing_model_reasoning_effort_targets_only_that_model() {
+    assert_eq!(
+        build_model_selection_edits("gpt-5.6-luna", None::<String>),
+        vec![
+            ConfigEdit {
+                key_path: "model".to_string(),
+                value: serde_json::json!("gpt-5.6-luna"),
+                merge_strategy: MergeStrategy::Replace,
+            },
+            ConfigEdit {
+                key_path: "model_reasoning_efforts.\"gpt-5.6-luna\"".to_string(),
+                value: serde_json::Value::Null,
+                merge_strategy: MergeStrategy::Replace,
+            },
+        ]
+    );
+}
+
 #[tokio::test]
 async fn remote_project_trust_guards_thread_start_and_preserves_repository_decisions() -> Result<()>
 {

@@ -187,6 +187,7 @@ fn new_config(model: Option<String>, arg0_paths: Arg0DispatchPaths) -> anyhow::R
         .clone();
 
     let mut config = Config {
+        hsin: Default::default(),
         config_layer_stack: ConfigLayerStack::default(),
         startup_warnings: Vec::new(),
         bypass_hook_trust: false,
@@ -279,6 +280,7 @@ fn new_config(model: Option<String>, arg0_paths: Arg0DispatchPaths) -> anyhow::R
         main_execve_wrapper_exe: arg0_paths.main_execve_wrapper_exe,
         zsh_path: None,
         model_reasoning_effort: None,
+        model_reasoning_efforts: BTreeMap::new(),
         plan_mode_reasoning_effort: None,
         model_reasoning_summary: None,
         model_catalog: None,

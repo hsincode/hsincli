@@ -246,3 +246,82 @@ async fn replacement_preserves_remote_launch_paths_and_older_servers() -> Result
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn model_specific_reasoning_effort_overrides_legacy_default() -> Result<()> {
+    let (mut app, _events, _ops) = make_test_app_with_channels().await;
+    app.config.model = Some("model-a".to_string());
+    app.config.model_reasoning_effort = Some(ReasoningEffortConfig::Low);
+    app.config
+        .model_reasoning_efforts
+        .insert("model-a".to_string(), ReasoningEffortConfig::Ultra);
+    app.config
+        .model_reasoning_efforts
+        .insert("model-b".to_string(), ReasoningEffortConfig::High);
+
+    crate::app::new_session::apply_model_specific_defaults(&mut app.config, &[]);
+    assert_eq!(
+        app.config.model_reasoning_effort,
+        Some(ReasoningEffortConfig::Ultra)
+    );
+
+    app.config.model = Some("model-b".to_string());
+    crate::app::new_session::apply_model_specific_defaults(&mut app.config, &[]);
+    assert_eq!(
+        app.config.model_reasoning_effort,
+        Some(ReasoningEffortConfig::High)
+    );
+
+    app.cli_kv_overrides.push((
+        "model_reasoning_effort".to_string(),
+        TomlValue::String("low".to_string()),
+    ));
+    crate::app::new_session::apply_model_specific_defaults(&mut app.config, &app.cli_kv_overrides);
+    assert_eq!(
+        app.config.model_reasoning_effort,
+        Some(ReasoningEffortConfig::High)
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn server_defaults_overlay_model_specific_reasoning_and_service_tiers() -> Result<()> {
+    let (mut app, _events, _ops) = make_test_app_with_channels().await;
+    app.config.model = Some("client-model".to_string());
+    app.config.model_reasoning_effort = Some(ReasoningEffortConfig::Low);
+    app.config
+        .model_reasoning_efforts
+        .insert("server-model".to_string(), ReasoningEffortConfig::High);
+    app.config
+        .model_service_tiers
+        .insert("server-model".to_string(), "default".to_string());
+
+    let defaults: codex_app_server_protocol::Config = serde_json::from_value(serde_json::json!({
+        "model": "server-model",
+        "model_reasoning_effort": "low",
+        "model_reasoning_efforts": { "server-model": "ultra" },
+        "model_service_tiers": { "server-model": "fast" },
+    }))?;
+    crate::app::new_session::overlay_new_session_defaults(
+        &mut app.config,
+        &defaults,
+        &[],
+        &ConfigOverrides::default(),
+    );
+
+    assert_eq!(app.config.model.as_deref(), Some("server-model"));
+    assert_eq!(
+        app.config.model_reasoning_efforts.get("server-model"),
+        Some(&ReasoningEffortConfig::Ultra)
+    );
+    assert_eq!(
+        app.config.model_service_tiers.get("server-model"),
+        Some(&"fast".to_string())
+    );
+    crate::app::new_session::apply_model_specific_defaults(&mut app.config, &[]);
+    assert_eq!(
+        app.config.model_reasoning_effort,
+        Some(ReasoningEffortConfig::Ultra)
+    );
+    Ok(())
+}

@@ -372,9 +372,20 @@ impl App {
                     self.refresh_in_memory_config_from_disk_best_effort("forking the thread")
                         .await;
                     let mut fork_config = self.config.clone();
-                    fork_config.model = Some(self.chat_widget.current_model().to_string());
-                    fork_config.model_reasoning_effort =
-                        self.chat_widget.current_reasoning_effort();
+                    let current_model = self.chat_widget.current_model().to_string();
+                    let current_effort = self.chat_widget.current_reasoning_effort();
+                    fork_config.model = Some(current_model.clone());
+                    fork_config.model_reasoning_effort = current_effort.clone();
+                    match current_effort {
+                        Some(effort) => {
+                            fork_config
+                                .model_reasoning_efforts
+                                .insert(current_model, effort);
+                        }
+                        None => {
+                            fork_config.model_reasoning_efforts.remove(&current_model);
+                        }
+                    }
                     let selected_profile = self.confirmed_server_profile(thread_id);
                     match app_server.fork_thread_at(
                         &self.local_settings,
@@ -1725,8 +1736,7 @@ impl App {
                 }
                 let model_changed = self.chat_widget.current_model() != model
                     || self.chat_widget.current_collaboration_mode().model() != model;
-                let default_effort =
-                    self.on_apply_advanced_reasoning(model.as_str(), effort.clone());
+                self.on_apply_advanced_reasoning(model.as_str(), effort.clone());
                 if model_changed {
                     self.sync_active_thread_model_setting(
                         app_server,
@@ -1744,12 +1754,12 @@ impl App {
                 self.sync_active_thread_service_tier_to_cached_session()
                     .await;
 
-                if let Some(default_effort) = default_effort.as_ref()
-                    && let Err(err) = self.persist_model_defaults(
+                if let Err(err) = self
+                    .persist_model_defaults(
                         app_server.request_handle(),
                         crate::config_update::build_model_selection_edits(
                             model.as_str(),
-                            Some(default_effort),
+                            Some(&effort),
                         ),
                         "default model and reasoning effort",
                     )
@@ -2274,6 +2284,16 @@ impl App {
                 }
             }
             AppEvent::PersistModelSelection { model, effort } => {
+                self.config.model = Some(model.clone());
+                if let Some(effort) = effort.as_ref() {
+                    self.config
+                        .model_reasoning_efforts
+                        .insert(model.clone(), effort.clone());
+                } else {
+                    self.config.model_reasoning_efforts.remove(&model);
+                }
+                self.chat_widget
+                    .set_model_reasoning_effort_default(model.as_str(), effort.clone());
                 match self.persist_model_defaults(
                     app_server.request_handle(),
                     crate::config_update::build_model_selection_edits(

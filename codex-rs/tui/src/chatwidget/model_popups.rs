@@ -39,6 +39,51 @@ impl ChatWidget {
         self.app_event_tx.send(AppEvent::FetchModels { request_id });
     }
 
+    /// Open the reasoning-effort picker for the model already in use.
+    ///
+    /// `/model` reaches the same popup through a model step; `/effort` skips that step because
+    /// the model is not changing. Reserve keeps its borrowed metadata here too, so choosing an
+    /// effort during a Reserve fallback does not switch the routed model.
+    pub(crate) fn open_effort_popup(&mut self) {
+        if !self.is_session_configured() {
+            self.add_info_message(
+                "Reasoning selection is disabled until startup completes.".to_string(),
+                /*hint*/ None,
+            );
+            return;
+        }
+
+        let presets = match self.model_catalog.try_list_models() {
+            Ok(models) => models,
+            Err(_) => {
+                self.add_info_message(
+                    "Models are being updated; please try /effort again in a moment.".to_string(),
+                    /*hint*/ None,
+                );
+                return;
+            }
+        };
+
+        let preset = if self.restrict_model_picker_to_luna_reserve() {
+            self.luna_reserve_preset(&presets)
+        } else {
+            let current_model = self.current_model();
+            presets
+                .into_iter()
+                .find(|preset| preset.model == current_model)
+        };
+        let Some(preset) = preset else {
+            let model = self.model_display_name().to_string();
+            self.add_info_message(
+                format!("Reasoning levels are unavailable for {model}."),
+                Some("Use /model to pick a model and reasoning level.".to_string()),
+            );
+            return;
+        };
+
+        self.open_reasoning_popup(preset);
+    }
+
     pub(super) fn model_menu_header(&self, title: &str, subtitle: &str) -> Box<dyn Renderable> {
         let title = title.to_string();
         let subtitle = subtitle.to_string();
@@ -495,11 +540,16 @@ impl ChatWidget {
             return;
         }
 
+        let model_slug = preset.model.to_string();
         let default_choice = choices
             .contains(&default_effort)
             .then(|| default_effort.clone());
-
-        let model_slug = preset.model.to_string();
+        let saved_choice = self
+            .config
+            .model_reasoning_efforts
+            .get(&model_slug)
+            .filter(|effort| choices.contains(effort))
+            .cloned();
         let model_label = if model_slug == LUNA_RESERVE_MODEL {
             preset.display_name.clone()
         } else {
@@ -512,13 +562,21 @@ impl ChatWidget {
                     .plan_mode_reasoning_effort
                     .clone()
                     .or_else(|| self.effective_reasoning_effort())
+                    .or_else(|| saved_choice.clone())
             } else {
                 self.effective_reasoning_effort()
+                    .or_else(|| saved_choice.clone())
             }
         } else {
-            default_choice.clone().or_else(|| choices.first().cloned())
+            saved_choice
+                .clone()
+                .or_else(|| default_choice.clone())
+                .or_else(|| choices.first().cloned())
         };
-        let selection_choice = highlight_choice.clone().or_else(|| default_choice.clone());
+        let selection_choice = highlight_choice
+            .clone()
+            .or_else(|| saved_choice.clone())
+            .or_else(|| default_choice.clone());
         let initial_selected_idx = choices
             .iter()
             .position(|choice| Some(choice) == selection_choice.as_ref());
@@ -634,9 +692,14 @@ impl ChatWidget {
 
         let model_slug = preset.model.to_string();
         let is_current_model = self.current_model() == preset.model.as_str();
-        let highlight_choice = is_current_model
-            .then(|| self.effective_reasoning_effort())
-            .flatten();
+        let highlight_choice = if is_current_model {
+            self.effective_reasoning_effort()
+        } else {
+            self.config
+                .model_reasoning_efforts
+                .get(&model_slug)
+                .cloned()
+        };
         let mut items = Vec::new();
         for effort in choices {
             let description = match &effort {
