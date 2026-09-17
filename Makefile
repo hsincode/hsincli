@@ -24,10 +24,10 @@ release:
 	cd codex-rs && cargo build --release -p codex-cli --bin codex
 
 install: release
-	install -Dm755 codex-rs/target/release/codex "$(PREFIX)/lib/hsin/codex"
+	install -Dm755 codex-rs/target/release/codex "$(PREFIX)/lib/hsin/hsin"
 	install -d "$(PREFIX)/bin"
-	ln -sfn ../lib/hsin/codex "$(PREFIX)/bin/hsin"
-	ln -sfn ../lib/hsin/codex "$(PREFIX)/bin/hsincli"
+	ln -sfn ../lib/hsin/hsin "$(PREFIX)/bin/hsin"
+	ln -sfn ../lib/hsin/hsin "$(PREFIX)/bin/hsincli"
 
 # Optional standalone host required for code-mode execution.
 install-code-mode-host:
