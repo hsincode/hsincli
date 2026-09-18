@@ -523,7 +523,7 @@ async fn spawn_agent_default_service_tier_only_applies_to_default_model() {
         &session,
         &turn,
         &mut explicit_config,
-        Some("gpt-5.4-mini"),
+        Some("gpt-5.5"),
         None,
     )
     .await

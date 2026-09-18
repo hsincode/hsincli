@@ -3700,7 +3700,7 @@ async fn model_reasoning_selection_popup_snapshot() {
     set_chatgpt_auth(&mut chat);
     chat.config
         .model_reasoning_efforts
-        .insert("gpt-5.4".to_string(), ReasoningEffortConfig::High);
+        .insert("gpt-5.5".to_string(), ReasoningEffortConfig::High);
 
     let mut preset = get_available_model(&chat, "gpt-5.5");
     preset.supported_reasoning_efforts.insert(
