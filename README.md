@@ -1,6 +1,6 @@
  # HsinCLI
 
-OpenAI Codex CLI 0.154.0 をベースにした非公式フォークです。設定・認証・セッションを Codex から分離し、サブエージェントの履歴継承を制御できます。
+OpenAI Codex CLI 0.155.1 をベースにした非公式フォークです。設定・認証・セッションを Codex から分離し、サブエージェントの履歴継承を制御できます。
 
 ## 主な機能
 
@@ -48,13 +48,46 @@ max_turns = 3
 
 - `default_turns`: 省略時の継承ターン数（`none`、`all`、正の整数）
 - `max_turns`: 数値指定の上限。省略すると上限なし
-- `allow_all`: `fork_turns = "all"` の許可
+- `allow_all`: `fork_turns = "all"` の許可。`max_turns` を設定している場合は、それだけで `all` は拒否されます
 - `service_tier`: 新しいターンで使う既定のサービスティア。`default`、`priority`、`flex` を指定できます（旧名 `fast` も使用可能）
 - `model_service_tiers`: モデル名ごとのサービスティア。モデル別設定が全体の `service_tier` より優先されます
 - `agents.default_subagent_service_tier`: 既定モデルで起動するサブエージェントのサービスティア
 - `model_reasoning_levels`: モデルごとに追加で提示する推論レベル。カタログにあるレベルは変更しません
+- `features.multi_agent_v2.tool_namespace`: V2 の予約ツールを公開する名前空間。既定値は `agents` です。`collaboration` は一部モデルで予約されているため、スキーマが一致しない設定では使用しないでください
+- `advisor`: ターンを完了と報告する直前に、上位モデルへ相談させます（既定は無効）
 
 サービスティアはモデルが対応している場合だけリクエストに適用されます。未設定の場合はプロバイダーとモデルの既定値が使われます。
+
+## advisor
+
+エージェントがターンを完了と報告する直前に、別の（通常はより強い）モデルへ会話を見せて確認させます。
+
+```toml
+[advisor]
+enabled = true
+model = "gpt-5.6-sol"
+reasoning_effort = "xhigh"
+max_consultations_per_turn = 1
+min_tool_calls = 1
+max_transcript_chars = 240000
+# instructions = "..."   # 既定の指示文を丸ごと差し替え
+```
+
+- `enabled`: 既定は `false`。有効にすると、より高価なモデルへのリクエストが1ターンにつき最大 `max_consultations_per_turn` 回発生します
+- `model`: 相談先のモデル。省略するとそのターン自身のモデルになります（別視点にはなりますが上位への委譲にはなりません）
+- `reasoning_effort`: 省略時は相談先モデルの既定値
+- `max_consultations_per_turn`: 指摘を受けてエージェントが作業を続けた場合、再度相談させる回数の上限。既定 1
+- `min_tool_calls`: ツール呼び出しがこの数に満たないターンは相談を省きます。質問に答えただけのターンを課金しないためで、既定 1。`0` で常に相談します
+- `max_transcript_chars`: 送る会話の文字数上限。超える場合は末尾を残します。既定 240000
+- `instructions`: 既定の指示文を置き換えます
+
+相談先には**会話そのもの**（全ツール呼び出しとその結果）が渡ります。エージェント自身の要約ではありません。完了したと確信しているエージェントの要約は、その確信ごと引き継いでしまうためです。暗号化されている reasoning は渡りません。
+
+相談先はファイル編集も委譲も web 検索も行わず、advisor 自身がさらに advisor を呼ぶこともありません。`LGTM` だけを返した場合はターンがそのまま完了し、それ以外は指摘がエージェントへ戻って作業が続きます。
+
+呼ぶかどうかをモデルの判断に委ねていないのは意図的です。完了したと思い込んで終わるターンこそ、自分からは助言を求めないためです。
+
+この判断と `fork_turns` の値制約が乗っている実測は [`docs/measurements/`](docs/measurements/) に置いてあります。
 
 `model_reasoning_levels` は `/model` と `/effort` の選択肢を広げるだけで、モデル側の対応を変えるものではありません。`ultra` を追加する場合は `features.multi_agent_v2 = true` も設定してください。カタログ上 v1 のモデルでは Ultra は委譲を行わず、Max 相当の推論として送信されます。
 

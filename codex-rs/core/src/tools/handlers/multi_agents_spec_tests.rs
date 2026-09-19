@@ -477,3 +477,49 @@ fn list_agents_tool_status_schema_includes_interrupted() {
         ])
     );
 }
+
+fn fork_turns_property(policy: codex_config::hsin::ForkPolicy) -> JsonSchema {
+    let tool = create_spawn_agent_tool_v2(SpawnAgentToolOptions {
+        fork_policy: policy,
+        available_models: vec![model_preset("visible", /*show_in_picker*/ true)],
+        agent_type_description: "role help".to_string(),
+        expose_agent_type: true,
+        hide_agent_type_model_reasoning: false,
+        expose_spawn_agent_model_overrides: true,
+        multi_agent_version: MultiAgentVersion::V2,
+        usage_hint_text: None,
+    });
+    let ToolSpec::Function(ResponsesApiTool { parameters, .. }) = tool else {
+        panic!("spawn_agent should be a function tool");
+    };
+    parameters
+        .properties
+        .expect("spawn_agent takes parameters")
+        .remove("fork_turns")
+        .expect("fork_turns is offered under multi-agent v2")
+}
+
+#[test]
+fn a_bounded_policy_stays_a_free_form_string_and_states_its_limit() {
+    let config: codex_config::config_toml::ConfigToml =
+        toml::from_str("[hsin.fork]\ndefault_turns = 1\nmax_turns = 3\nallow_all = false").unwrap();
+    let schema = fork_turns_property(config.hsin.fork);
+
+    // The Responses API reserves `collaboration.spawn_agent` and rejects the request when
+    // the schema sent for it differs from the configured one, so an enum of the permitted
+    // values — however much it would save — cannot go on the wire. The limit reaches the
+    // model through the description, and `ForkPolicy::check` enforces it.
+    assert!(schema.enum_values.is_none());
+    let description = schema.description.unwrap_or_default();
+    assert!(description.contains("from 1 to 3"), "{description}");
+    assert!(!description.contains("all"), "{description}");
+}
+
+#[test]
+fn an_unbounded_policy_describes_full_history_when_it_is_permitted() {
+    let config: codex_config::config_toml::ConfigToml =
+        toml::from_str("[hsin.fork]\nallow_all = true").unwrap();
+    let schema = fork_turns_property(config.hsin.fork);
+    assert!(schema.enum_values.is_none());
+    assert!(schema.description.unwrap_or_default().contains("all"));
+}

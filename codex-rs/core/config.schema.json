@@ -6,6 +6,51 @@
       "description": "A path that is guaranteed to be absolute and normalized (though it is not guaranteed to be canonicalized or exist on the filesystem).\n\nIMPORTANT: When deserializing an `AbsolutePathBuf`, a base path must be set using [AbsolutePathBufGuard::new]. If no base path is set, the deserialization will fail unless the path being deserialized is already absolute.",
       "type": "string"
     },
+    "AdvisorToml": {
+      "additionalProperties": false,
+      "description": "Settings for the advisor: a second, stronger model consulted at the point where the agent would otherwise declare a turn complete.\n\nThe agent decides when to spawn subagents, but it does not decide whether to be reviewed — a run that ends convinced it is finished is exactly the one that never asks. So this fires on a rule rather than on the model's judgement.",
+      "properties": {
+        "enabled": {
+          "description": "Off unless asked for; the advisor costs a request against a more expensive model.",
+          "type": "boolean"
+        },
+        "instructions": {
+          "description": "Replaces the advisor's built-in instructions wholesale.",
+          "type": "string"
+        },
+        "max_consultations_per_turn": {
+          "description": "How many times the advisor may be consulted within one turn. Each consultation hands its guidance back to the agent, which may then keep working, so this is the bound on that back-and-forth. Defaults to 1.",
+          "format": "uint",
+          "minimum": 1.0,
+          "type": "integer"
+        },
+        "max_transcript_chars": {
+          "description": "Characters of rendered transcript to send. The tail is kept when the conversation is longer, since the recent turns are what the decision rests on. Defaults to 240000.",
+          "format": "uint",
+          "minimum": 1000.0,
+          "type": "integer"
+        },
+        "min_tool_calls": {
+          "description": "Skip the consultation when the turn did nothing worth reviewing, measured in tool calls. Defaults to 1, so a turn that only answered a question is not billed for an advisor pass.",
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "model": {
+          "description": "Model slug to consult, for example `gpt-5.6-sol`. Defaults to the turn's own model, which is useful for a second opinion but is not an escalation.",
+          "type": "string"
+        },
+        "reasoning_effort": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ReasoningEffort"
+            }
+          ],
+          "description": "Reasoning effort for the advisor. Defaults to the advisor model's own default."
+        }
+      },
+      "type": "object"
+    },
     "AgentRoleToml": {
       "additionalProperties": false,
       "properties": {
@@ -428,6 +473,35 @@
       ],
       "type": "object"
     },
+    "AwsCredentialExportConfig": {
+      "additionalProperties": false,
+      "description": "Command used to export AWS signing credentials for a model provider.",
+      "properties": {
+        "args": {
+          "default": [],
+          "description": "Arguments passed to the credential export command.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "description": "Executable to invoke directly, without a shell.",
+          "type": "string"
+        },
+        "timeout_ms": {
+          "default": 30000,
+          "description": "Maximum time to wait for the credential export command to complete.",
+          "format": "uint64",
+          "minimum": 1.0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
     "BrowserUseConfigToml": {
       "additionalProperties": false,
       "properties": {
@@ -611,6 +685,9 @@
           "default": null,
           "description": "Optional feature toggles scoped to this profile.",
           "properties": {
+            "api_key_model_discovery": {
+              "type": "boolean"
+            },
             "apply_patch_freeform": {
               "type": "boolean"
             },
@@ -679,6 +756,9 @@
               "type": "boolean"
             },
             "code_mode_prewarm": {
+              "type": "boolean"
+            },
+            "codex_apps_mcp_2026_07_28": {
               "type": "boolean"
             },
             "codex_git_commit": {
@@ -1169,6 +1249,62 @@
         "experimental_mode": {
           "description": "Enables experimental context management.",
           "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "CredentialAuthMethod": {
+      "description": "Authentication formats supported by declarative credential providers.",
+      "enum": [
+        "bearer",
+        "token",
+        "basic",
+        "header"
+      ],
+      "type": "string"
+    },
+    "CredentialProviderConfig": {
+      "additionalProperties": false,
+      "description": "Declarative description of an environment-backed credential family.",
+      "properties": {
+        "auth": {
+          "default": [],
+          "items": {
+            "$ref": "#/definitions/CredentialAuthMethod"
+          },
+          "type": "array"
+        },
+        "env": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "header": {
+          "type": "string"
+        },
+        "patterns": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "url_prefix_from_env": {
+          "description": "Environment variable containing an additional URL prefix or hostname.",
+          "type": "string"
+        },
+        "url_prefixes": {
+          "default": [],
+          "description": "URL prefixes authorized for injection. Bare loopback hosts imply HTTP; other bare hosts imply HTTPS.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -2153,6 +2289,10 @@
           "description": "When `true`, external context sources mark the thread `memory_mode` as `\"polluted\"`.",
           "type": "boolean"
         },
+        "dual_write": {
+          "description": "Generate both versions while the selected version supplies context.",
+          "type": "boolean"
+        },
         "extract_model": {
           "description": "Model used for thread summarisation.",
           "type": "string"
@@ -2200,9 +2340,24 @@
         "use_memories": {
           "description": "When `false`, skip injecting memory usage instructions into developer prompts.",
           "type": "boolean"
+        },
+        "version": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/MemoryVersion"
+            }
+          ],
+          "description": "Selects the memory pipeline; v1 remains the default."
         }
       },
       "type": "object"
+    },
+    "MemoryVersion": {
+      "enum": [
+        "v1",
+        "v2"
+      ],
+      "type": "string"
     },
     "ModelAvailabilityNuxConfig": {
       "additionalProperties": {
@@ -2267,6 +2422,14 @@
             }
           ],
           "description": "Optional command used to reauthenticate after a refreshable AWS auth failure."
+        },
+        "credential_export": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/AwsCredentialExportConfig"
+            }
+          ],
+          "description": "Optional command whose exported credentials replace the AWS SDK credential chain."
         },
         "profile": {
           "description": "AWS profile name to use. When unset, the AWS SDK default chain decides.",
@@ -2604,6 +2767,12 @@
         },
         "credential_broker": {
           "type": "boolean"
+        },
+        "credentials": {
+          "additionalProperties": {
+            "$ref": "#/definitions/CredentialProviderConfig"
+          },
+          "type": "object"
         },
         "dangerously_allow_all_unix_sockets": {
           "type": "boolean"
@@ -3949,6 +4118,9 @@
           ],
           "default": {
             "agents": {
+              "archive": null,
+              "delete": null,
+              "hide": null,
               "new_task": null,
               "rename": null,
               "resume": null,
@@ -4199,6 +4371,11 @@
           "default": null,
           "description": "Preferred layout for resume/fork session picker results."
         },
+        "show_server_version_notice": {
+          "default": true,
+          "description": "Show an informational notice when the connected app server is an older stable release. Defaults to `true`; this does not control compatibility errors or version status.",
+          "type": "boolean"
+        },
         "show_tooltips": {
           "default": true,
           "description": "Show startup tooltips in the TUI welcome screen. Defaults to `true`.",
@@ -4254,6 +4431,30 @@
       "additionalProperties": false,
       "description": "Shortcuts specific to the shared agents overview.",
       "properties": {
+        "archive": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeybindingsSpec"
+            }
+          ],
+          "description": "Archive the selected task and its child agents after confirmation."
+        },
+        "delete": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeybindingsSpec"
+            }
+          ],
+          "description": "Permanently delete the selected task and its child agents after confirmation."
+        },
+        "hide": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/KeybindingsSpec"
+            }
+          ],
+          "description": "Hide the selected task until explicitly resumed or the TUI restarts."
+        },
         "new_task": {
           "allOf": [
             {
@@ -4759,6 +4960,9 @@
             }
           ],
           "default": {
+            "archive": null,
+            "delete": null,
+            "hide": null,
             "new_task": null,
             "rename": null,
             "resume": null,
@@ -5911,6 +6115,14 @@
   },
   "description": "Base config deserialized from ~/.codex/config.toml.",
   "properties": {
+    "advisor": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AdvisorToml"
+        }
+      ],
+      "description": "Consult a stronger model before the agent finishes a turn."
+    },
     "agents": {
       "allOf": [
         {
@@ -6077,6 +6289,9 @@
       "default": null,
       "description": "Centralized feature flags (new). Prefer this over individual toggles.",
       "properties": {
+        "api_key_model_discovery": {
+          "type": "boolean"
+        },
         "apply_patch_freeform": {
           "type": "boolean"
         },
@@ -6145,6 +6360,9 @@
           "type": "boolean"
         },
         "code_mode_prewarm": {
+          "type": "boolean"
+        },
+        "codex_apps_mcp_2026_07_28": {
           "type": "boolean"
         },
         "codex_git_commit": {

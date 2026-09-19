@@ -575,7 +575,7 @@ async fn steer_interrupts_wait_agent_and_is_sent_in_follow_up_request() {
     const WAIT_CALL_ID: &str = "wait-call";
     const INITIAL_PROMPT: &str = "wait for an agent";
     const STEER_PROMPT: &str = "stop waiting and continue";
-    const MULTI_AGENT_V2_NAMESPACE: &str = "collaboration";
+    const MULTI_AGENT_V2_NAMESPACE: &str = "agents";
 
     let first_chunks = vec![
         chunk(ev_response_created("resp-1")),
@@ -1255,7 +1255,6 @@ async fn terminal_compaction_error_does_not_retry_pending_input(
         .with_config(move |config| {
             config.model_provider.base_url = Some(base_url);
             config.model_auto_compact_token_limit = Some(100_000);
-            let _ = config.features.enable(Feature::RemoteCompactionV2);
             // The streaming fixture records raw request bodies for JSON assertions.
             let _ = config.features.disable(Feature::EnableRequestCompression);
         })

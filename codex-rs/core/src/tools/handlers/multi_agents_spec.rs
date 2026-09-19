@@ -116,6 +116,11 @@ pub fn create_spawn_agent_tool_v2(options: SpawnAgentToolOptions) -> ToolSpec {
         && !options.hide_agent_type_model_reasoning)
         .then_some(SPAWN_AGENT_INHERITED_MODEL_GUIDANCE);
     let mut properties = spawn_agent_common_properties_v2(&options.agent_type_description);
+    // Only the description may carry the fork policy. The Responses API reserves
+    // A configured `collaboration.spawn_agent` is reserved by the Responses API and rejects
+    // any request whose schema for it departs from the configured one, so constraining
+    // `fork_turns` to an enum of the permitted values costs the whole turn a 400 rather than
+    // saving a round trip.
     properties.insert(
         "fork_turns".into(),
         JsonSchema::string(Some(options.fork_policy.tool_description())),

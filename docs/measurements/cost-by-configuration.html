@@ -1,0 +1,452 @@
+<title>委譲構成コスト早見表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #17202b;
+    --ink-soft: #46535f;
+    --ink-faint: #76828d;
+    --rule: #dfe3e8;
+    --rule-soft: #eceff2;
+    --accent: #0f6e5c;
+    --accent-soft: #e6f0ed;
+    --band: #f0f2f5;
+
+    --sans: "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+    --display: "Archivo", "IBM Plex Sans JP", "Hiragino Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #13181d;
+      --surface: #1a2027;
+      --ink: #e6eaee;
+      --ink-soft: #a9b4bf;
+      --ink-faint: #7d8893;
+      --rule: #2c353e;
+      --rule-soft: #232b33;
+      --accent: #4fbfa4;
+      --accent-soft: #1d2f2b;
+      --band: #1f262d;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #13181d;
+    --surface: #1a2027;
+    --ink: #e6eaee;
+    --ink-soft: #a9b4bf;
+    --ink-faint: #7d8893;
+    --rule: #2c353e;
+    --rule-soft: #232b33;
+    --accent: #4fbfa4;
+    --accent-soft: #1d2f2b;
+    --band: #1f262d;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 0 16px;
+  }
+
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding-block: 48px 72px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 40px);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0 0 14px;
+  }
+
+  .lede {
+    color: var(--ink-soft);
+    font-size: 16px;
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 21px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 6px;
+    padding-top: 4px;
+  }
+
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-faint);
+    margin-right: 10px;
+  }
+
+  section { margin-top: 52px; }
+
+  .note {
+    color: var(--ink-soft);
+    max-width: 66ch;
+    margin: 0 0 20px;
+  }
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  caption {
+    caption-side: top;
+    text-align: left;
+    padding: 12px 16px 10px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--rule-soft);
+  }
+
+  th, td {
+    padding: 9px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--rule-soft);
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+    background: var(--band);
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: 0;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  .n { text-align: right; font-family: var(--mono); }
+  .slug { font-family: var(--mono); font-size: 13px; }
+  .dim { color: var(--ink-faint); }
+
+  /* The bracket carries the whole point of the table: a row that rests on an
+     assumption is not the same evidence as one that was measured. */
+  .est {
+    font-family: var(--mono);
+    color: var(--ink-faint);
+    padding-left: 2px;
+  }
+
+  tr.base td {
+    background: var(--accent-soft);
+    font-weight: 500;
+  }
+
+  tr.rule-above td { border-top: 1px solid var(--rule); }
+
+  .callout {
+    border-left: 2px solid var(--accent);
+    padding: 2px 0 2px 16px;
+    margin: 22px 0;
+    color: var(--ink-soft);
+    max-width: 64ch;
+  }
+
+  .callout strong { color: var(--ink); font-weight: 600; }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.92em;
+    background: var(--band);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  ul.plain { padding-left: 1.15em; margin: 0; max-width: 66ch; color: var(--ink-soft); }
+  ul.plain li { margin-bottom: 7px; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-faint);
+    font-size: 13px;
+    max-width: 66ch;
+  }
+
+  @media (max-width: 560px) {
+    th, td { padding: 8px 12px; }
+    .wrap { padding-block: 32px 56px; }
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Codex / GPT-5.6 &amp; GPT-6 · 2026-09-18</p>
+  <h1>委譲構成コスト早見表</h1>
+  <p class="lede">
+    親モデル・effort・委譲・advisor の組み合わせごとの費用。単価は litellm の <code>model_cost</code>、
+    トークンは手元の実セッションと DeepSWE ベンチの実測値から取っている。
+    推計を含む行には <span class="est">*</span> を付けた。
+  </p>
+
+  <div class="callout">
+    <strong>ultra は「max より上」ではない。</strong>
+    <code>ultra</code> は努力度の最上位ではなく V2 の自発委譲モードの指定で、ワイヤ上に送られる effort は別に解決される。
+    Astra はカタログに <code>multi_agent_reasoning_effort = "xhigh"</code> を持つため、ultra を選ぶと実際に送られるのは
+    <strong>xhigh</strong>。推論の深さだけなら max より一段下になる。
+  </div>
+
+  <section>
+    <h2><span class="num">01</span>単価</h2>
+    <p class="note">
+      入力の 94〜98% はキャッシュ読み出しなので、実効的にはキャッシュ単価が効く。
+      キャッシュ読みは全モデルとも入力単価の 10%。
+    </p>
+    <div class="scroller">
+      <table>
+        <caption>litellm <code>model_cost</code>、base tier（<code>service_tier = "default"</code>）</caption>
+        <thead>
+          <tr>
+            <th scope="col">モデル</th>
+            <th scope="col" class="n">入力 / Mtok</th>
+            <th scope="col" class="n">キャッシュ読み</th>
+            <th scope="col" class="n">出力 / Mtok</th>
+            <th scope="col" class="n">Luna 比（入力）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="slug">gpt-5.6-luna</td><td class="n">$0.20</td><td class="n">$0.02</td><td class="n">$1.20</td><td class="n">1x</td></tr>
+          <tr><td class="slug">gpt-5.6-sol</td><td class="n">$4.00</td><td class="n">$0.40</td><td class="n">$20.00</td><td class="n">20x</td></tr>
+          <tr><td class="slug">gpt-6-astra</td><td class="n">$10.00</td><td class="n">$1.00</td><td class="n">$50.00</td><td class="n">50x</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>effort 別の実測</h2>
+    <p class="note">
+      <code>~/.codex</code> と <code>~/.hsin</code> の全ルートスレッドから、モデル・effort 別に中央値を取った。
+      子エージェントは含まない。すべて実測。
+    </p>
+
+    <div class="callout">
+      <strong>effort とセッションの長さが交絡している。</strong>
+      effort ごとに実行したタスクが違うので、難易度を揃えていない。
+      実際、高い effort のセッションは長くもある（ツール呼び出しが low 26回 → max 48回）。
+      「難しいから高い effort を選んだ」のか「effort を上げたから丁寧に働いた」のかは、このデータでは区別できない。
+      そこで 1 要求あたりの額も併記し、要求数 33 本（low の中央値）に揃えた列を置いた。
+      <strong>そちらが effort だけを取り出した値</strong>になる。
+    </div>
+
+    <div class="scroller">
+      <table>
+        <caption>対話セッション1本あたりの中央値（親スレッドのみ）</caption>
+        <thead>
+          <tr>
+            <th scope="col">モデル</th>
+            <th scope="col">effort</th>
+            <th scope="col" class="n">n</th>
+            <th scope="col" class="n">ツール数</th>
+            <th scope="col" class="n">要求数</th>
+            <th scope="col" class="n">出力 / 要求</th>
+            <th scope="col" class="n">reasoning / 要求</th>
+            <th scope="col" class="n">$ / session</th>
+            <th scope="col" class="n">素の比</th>
+            <th scope="col" class="n">同一長換算</th>
+            <th scope="col" class="n">補正比</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="slug">astra</td><td>low</td><td class="n">21</td><td class="n">26</td><td class="n">33</td><td class="n">307</td><td class="n">15</td><td class="n">3.74</td><td class="n">1.0x</td><td class="n">3.95</td><td class="n">1.0x</td></tr>
+          <tr><td class="slug">astra</td><td>medium</td><td class="n">15</td><td class="n">34</td><td class="n">38</td><td class="n">478</td><td class="n">25</td><td class="n">5.96</td><td class="n">1.6x</td><td class="n">4.92</td><td class="n">1.2x</td></tr>
+          <tr><td class="slug">astra</td><td>high</td><td class="n">5</td><td class="n">38</td><td class="n">39</td><td class="n">470</td><td class="n">44</td><td class="n">5.83</td><td class="n">1.6x</td><td class="n">5.70</td><td class="n">1.4x</td></tr>
+          <tr><td class="slug">astra</td><td>xhigh</td><td class="n">10</td><td class="n">40</td><td class="n">44</td><td class="n">658</td><td class="n">184</td><td class="n">9.99</td><td class="n">2.7x</td><td class="n">6.59</td><td class="n">1.7x</td></tr>
+          <tr><td class="slug">astra</td><td>max</td><td class="n">1</td><td class="n">48</td><td class="n">52</td><td class="n">1139</td><td class="n">311</td><td class="n">11.30</td><td class="n">3.0x</td><td class="n">7.17</td><td class="n">1.8x</td></tr>
+          <tr class="rule-above"><td class="slug">sol</td><td>low</td><td class="n">1</td><td class="n">4</td><td class="n">5</td><td class="n">172</td><td class="n">35</td><td class="n">0.23</td><td class="n dim">—</td><td class="n">1.55</td><td class="n dim">—</td></tr>
+          <tr><td class="slug">sol</td><td>medium</td><td class="n">4</td><td class="n">91</td><td class="n">92</td><td class="n">325</td><td class="n">131</td><td class="n">6.18</td><td class="n dim">—</td><td class="n">1.87</td><td class="n dim">—</td></tr>
+          <tr class="rule-above"><td class="slug">luna</td><td>ultra</td><td class="n">26</td><td class="n">72</td><td class="n">75</td><td class="n">328</td><td class="n">177</td><td class="n">0.23</td><td class="n dim">—</td><td class="n">0.10</td><td class="n dim">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:14px">
+      <strong>見かけの effort 差の半分近くはセッションの長さだった。</strong>
+      素の比では xhigh が low の 2.7倍だが、長さを揃えると 1.7倍に縮む。
+      それでも 1.0x → 1.8x の差は残り、これは 1 要求あたりの出力と reasoning が実際に増えているぶん
+      （reasoning は 15 → 311 と20倍動く）。ここは effort 由来と言える。
+      high が medium とほぼ並ぶのは n=5 の偏り。max は n=1 なのでここだけ信頼度が落ちる。
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>advisor 1回の相談</h2>
+    <p class="note">
+      advisor は毎回まっさらな一発デリゲートなので<strong>キャッシュが効かない</strong>。transcript 全量が未キャッシュ入力として課金される。
+      子エージェント（キャッシュ 95% 超）と決定的に違う点。ここでは <strong>Luna ultra を親とする場合</strong>だけを扱う。
+      <span class="est">*</span> transcript 長と出力長は仮定値。
+    </p>
+    <div class="scroller">
+      <table>
+        <caption>1回の相談にかかる額<span class="est"> *</span></caption>
+        <thead>
+          <tr>
+            <th scope="col">transcript</th>
+            <th scope="col" class="n">出力</th>
+            <th scope="col" class="n">Sol</th>
+            <th scope="col" class="n">Astra</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="n">20k</td><td class="n">3k</td><td class="n">$0.140</td><td class="n">$0.350</td></tr>
+          <tr><td class="n">20k</td><td class="n">10k</td><td class="n">$0.280</td><td class="n">$0.700</td></tr>
+          <tr class="rule-above"><td class="n">60k</td><td class="n">3k</td><td class="n">$0.300</td><td class="n">$0.750</td></tr>
+          <tr><td class="n">60k</td><td class="n">10k</td><td class="n">$0.440</td><td class="n">$1.100</td></tr>
+          <tr class="rule-above"><td class="n">120k</td><td class="n">3k</td><td class="n">$0.540</td><td class="n">$1.350</td></tr>
+          <tr><td class="n">120k</td><td class="n">10k</td><td class="n">$0.680</td><td class="n">$1.700</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:14px">
+      既定の <code>max_transcript_chars = 240000</code> は概ね 60k トークンにあたる。以降の表は 60k / 出力 3k を中心値に置いた。
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>構成別の総額</h2>
+    <p class="note">
+      基準は Luna ultra（子も Luna）。advisor は Luna ultra を親とする場合のみ。
+      ultra の行は子のモデルで2通り並べた（Luna に固定した場合と、指定せず親と同じモデルを継いだ場合）。
+      <strong>$ / session</strong> は実績そのままで、02 の交絡（高い effort ほど長いセッションで使われている）を引き継ぐ。
+      <strong>実質単価</strong> は親の要求 33 本ぶんの作業に揃えた額で、その交絡を除いてある。
+      <span class="est">*</span> の行は子エージェント本数・advisor の入出力長・指摘後の追加作業量・Sol max の外挿のいずれかに仮定を含む。
+      <strong>この表の額はいずれも 02 の交絡を引き継いでいる</strong>ので、「その構成を実際に使った場面込みの実績」として読むこと。
+      effort だけを比べたい場合は 02 の同一長換算を見る。
+    </p>
+    <div class="scroller">
+      <table>
+        <caption>基準 = Luna ultra（子も Luna）。実質単価は親の要求 33 本ぶんに揃えた額</caption>
+        <thead>
+          <tr>
+            <th scope="col">構成</th>
+            <th scope="col" class="n">$ / session</th>
+            <th scope="col" class="n">素の比</th>
+            <th scope="col" class="n">実質単価</th>
+            <th scope="col" class="n">補正比</th>
+            <th scope="col">根拠</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="base"><td>Luna ultra + Luna 子<span class="est"> *</span></td><td class="n">0.55</td><td class="n">1.0x</td><td class="n">0.15</td><td class="n">1.0x</td><td class="dim">実測 n=25 + 子3.2本<span class="est"> *</span></td></tr>
+          <tr><td>Luna ultra + advisor Sol<span class="est"> *</span></td><td class="n">0.91</td><td class="n">1.7x</td><td class="n">0.45</td><td class="n">2.9x</td><td class="dim">推計</td></tr>
+          <tr><td>Luna ultra + advisor Astra<span class="est"> *</span></td><td class="n">1.36</td><td class="n">2.5x</td><td class="n">0.90</td><td class="n">5.9x</td><td class="dim">推計</td></tr>
+
+          <tr class="rule-above"><td>Astra low</td><td class="n">3.72</td><td class="n">6.8x</td><td class="n">3.95</td><td class="n">25.5x</td><td class="dim">実測 n=21</td></tr>
+          <tr><td>Astra medium</td><td class="n">5.96</td><td class="n">10.8x</td><td class="n">4.92</td><td class="n">31.8x</td><td class="dim">実測 n=15</td></tr>
+          <tr><td>Astra high</td><td class="n">5.83</td><td class="n">10.6x</td><td class="n">5.70</td><td class="n">36.9x</td><td class="dim">実測 n=5</td></tr>
+          <tr><td>Astra xhigh</td><td class="n">9.99</td><td class="n">18.2x</td><td class="n">6.59</td><td class="n">42.6x</td><td class="dim">実測 n=10</td></tr>
+          <tr><td>Astra max</td><td class="n">11.30</td><td class="n">20.5x</td><td class="n">7.17</td><td class="n">46.4x</td><td class="dim">実測 n=1</td></tr>
+          <tr><td>Astra ultra + Luna 子<span class="est"> *</span></td><td class="n">10.42</td><td class="n">18.9x</td><td class="n">6.64</td><td class="n">42.9x</td><td class="dim">xhigh 実測 + 委譲推計</td></tr>
+          <tr><td>Astra ultra + Astra 子<span class="est"> *</span></td><td class="n">26.36</td><td class="n">47.8x</td><td class="n">9.35</td><td class="n">60.5x</td><td class="dim">xhigh 実測 + 委譲推計</td></tr>
+
+          <tr class="rule-above"><td>Sol low</td><td class="n">0.23</td><td class="n">0.4x</td><td class="n">1.55</td><td class="n">10.0x</td><td class="dim">実測 n=1</td></tr>
+          <tr><td>Sol medium</td><td class="n">6.18</td><td class="n">11.2x</td><td class="n">1.86</td><td class="n">12.1x</td><td class="dim">実測 n=4</td></tr>
+          <tr><td>Sol ultra + Luna 子<span class="est"> *</span></td><td class="n">12.07</td><td class="n">21.9x</td><td class="n">2.77</td><td class="n">17.9x</td><td class="dim">max 外挿 + 委譲推計</td></tr>
+          <tr><td>Sol ultra + Sol 子<span class="est"> *</span></td><td class="n">18.09</td><td class="n">32.8x</td><td class="n">3.79</td><td class="n">24.5x</td><td class="dim">max 外挿 + 委譲推計</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>子のモデル指定を忘れると倍以上になる。</strong>
+      <code>agents.default_subagent_model</code> が未設定だと子は親のモデルを継ぐ。
+      Astra ultra で $10.42 → $26.36、Sol ultra で $12.07 → $18.09。
+      子1本の単価は Luna $0.096、Sol $1.98、Astra $5.08。
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>委譲は効いたか</h2>
+    <p class="note">
+      DeepSWE v1.1 の同一10タスクを、同じ Luna で effort と委譲の有無だけ変えて実測した結果。
+      失敗3件はいずれも「検証していないのに完了宣言」した型で、effort を上げても直らない性質だった。
+    </p>
+    <div class="scroller">
+      <table>
+        <caption>DeepSWE v1.1、seed 0、タスク1件あたり（子エージェント込み・実測）</caption>
+        <thead>
+          <tr>
+            <th scope="col">構成</th>
+            <th scope="col" class="n">正解</th>
+            <th scope="col" class="n">pass@1</th>
+            <th scope="col" class="n">$ / task</th>
+            <th scope="col" class="n">出力 / task</th>
+            <th scope="col" class="n">spawn</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Luna max（委譲なし）</td><td class="n">4 / 9</td><td class="n">44%</td><td class="n">0.52</td><td class="n">68k</td><td class="n">0</td></tr>
+          <tr><td>Luna ultra（委譲あり）</td><td class="n">7 / 10</td><td class="n">70%</td><td class="n">0.90</td><td class="n">103k</td><td class="n">33</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:14px">
+      差がついた3タスクはすべて委譲なし側が「あと少し」で落としたもの（f2p 136/137 など）。
+      ただし <strong>spawn 33回すべてで <code>agent_type</code> が省略され、子32本は全部 Luna</strong> だった。
+      上位モデルへ上がる経路はツール定義に存在していない。
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">06</span>推計に含まれる仮定</h2>
+    <ul class="plain">
+      <li>子エージェントは 3.2本 / タスク。Luna ultra の実測から取っており、Astra ultra の委譲実績は手元にない</li>
+      <li>Astra の子の出力は Luna 比 1.6倍と置いた（effort 表の xhigh / ultra 比から）</li>
+      <li>advisor の transcript は 60k トークン、出力は 3k トークン。advisor は Luna ultra を親とする場合のみ算出した</li>
+      <li>Sol の ultra はワイヤ上 max に解決されるが Sol max は未実測。Astra の max/medium 比（入力 1.60x・出力 2.96x）を Sol medium に当てて外挿した</li>
+      <li>Sol の子は Luna 比 1.4倍の出力、Astra の子は 1.6倍と置いた</li>
+      <li>advisor の指摘後にエージェントが追加で働く分は、親トークンの 25%</li>
+      <li>セッション単位なので内容の重さはばらつく。すべて中央値で比較している</li>
+      <li><strong>effort ごとに実行したタスクが違い、難易度を揃えていない。</strong>02 の同一長換算と 04 の実質単価が、その影響を除いた値</li>
+      <li>実質単価は「親が要求を 33 本こなす作業」に揃えた額。子の本数は DeepSWE 実測の比（親 194 要求に対し子 3.2 本 × 40 要求 = 親 1 要求あたり 0.66 子要求）で按分し、advisor は 1 回とした</li>
+      <li>DeepSWE の行だけタスク単位で、他はセッション単位。単位が違うので直接は比べられない</li>
+    </ul>
+  </section>
+
+  <footer>
+    単価は litellm <code>model_cost</code> の base tier。トークンは <code>~/.codex</code> / <code>~/.hsin</code> の rollout と
+    <code>hsincli-bench</code> の DeepSWE 実行から集計。<span class="est">*</span> は推計を含む行。
+  </footer>
+</div>

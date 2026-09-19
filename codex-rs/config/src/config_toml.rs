@@ -186,6 +186,8 @@ pub struct ConfigToml {
     /// Optional policy instructions for the guardian auto-reviewer.
     #[serde(default)]
     pub auto_review: Option<AutoReviewToml>,
+    /// Consult a stronger model before the agent finishes a turn.
+    pub advisor: Option<AdvisorToml>,
 
     pub browser_use: Option<BrowserUseConfigToml>,
 
@@ -556,6 +558,45 @@ pub enum ThreadStoreToml {
     InMemory {
         id: String,
     },
+}
+
+/// Settings for the advisor: a second, stronger model consulted at the point where the
+/// agent would otherwise declare a turn complete.
+///
+/// The agent decides when to spawn subagents, but it does not decide whether to be
+/// reviewed — a run that ends convinced it is finished is exactly the one that never asks.
+/// So this fires on a rule rather than on the model's judgement.
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]
+#[schemars(deny_unknown_fields)]
+pub struct AdvisorToml {
+    /// Off unless asked for; the advisor costs a request against a more expensive model.
+    pub enabled: Option<bool>,
+
+    /// Model slug to consult, for example `gpt-5.6-sol`. Defaults to the turn's own model,
+    /// which is useful for a second opinion but is not an escalation.
+    pub model: Option<String>,
+
+    /// Reasoning effort for the advisor. Defaults to the advisor model's own default.
+    pub reasoning_effort: Option<ReasoningEffort>,
+
+    /// How many times the advisor may be consulted within one turn. Each consultation
+    /// hands its guidance back to the agent, which may then keep working, so this is the
+    /// bound on that back-and-forth. Defaults to 1.
+    #[schemars(range(min = 1))]
+    pub max_consultations_per_turn: Option<usize>,
+
+    /// Replaces the advisor's built-in instructions wholesale.
+    pub instructions: Option<String>,
+
+    /// Characters of rendered transcript to send. The tail is kept when the conversation
+    /// is longer, since the recent turns are what the decision rests on. Defaults to 240000.
+    #[schemars(range(min = 1000))]
+    pub max_transcript_chars: Option<usize>,
+
+    /// Skip the consultation when the turn did nothing worth reviewing, measured in tool
+    /// calls. Defaults to 1, so a turn that only answered a question is not billed for an
+    /// advisor pass.
+    pub min_tool_calls: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq, JsonSchema)]

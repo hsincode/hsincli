@@ -70,6 +70,10 @@ impl ToolCallRuntime {
             .create_diff_consumer(tool_name)
     }
 
+    pub(crate) fn direct_source(&self, call: &ToolCall) -> ToolCallSource {
+        self.step_context.tool_router.direct_source(call)
+    }
+
     #[instrument(level = "trace", skip_all)]
     pub(crate) fn handle_tool_call(
         self,
@@ -77,7 +81,7 @@ impl ToolCallRuntime {
         cancellation_token: CancellationToken,
     ) -> impl std::future::Future<Output = Result<ResponseItemEnvelope, CodexErr>> {
         let error_call = call.clone();
-        let source = call.direct_source();
+        let source = self.direct_source(&call);
         let future = self.handle_tool_call_with_source(call, source, cancellation_token);
         async move {
             match future.await {
@@ -98,20 +102,11 @@ impl ToolCallRuntime {
         source: ToolCallSource,
         cancellation_token: CancellationToken,
     ) -> impl std::future::Future<Output = Result<AnyToolResult, FunctionCallError>> {
-        if self
-            .step_context
-            .turn
-            .config
-            .features
-            .enabled(codex_features::Feature::ExecutedToolCallMetadata)
-            && let Some(executed_tool_calls) = self.session.services.executed_tool_calls.as_ref()
-        {
-            executed_tool_calls.record_tool_call(
-                &call,
-                &source,
-                self.step_context.tool_router.tool_mode(),
-            );
-        }
+        self.session.services.executed_tool_calls.record_tool_call(
+            &call,
+            &source,
+            &self.step_context,
+        );
         let router = &self.step_context.tool_router;
         let supports_parallel = router.tool_supports_parallel(&call);
         let tool_runtime = router.tool_runtime(&call.tool_name);
@@ -135,10 +130,12 @@ impl ToolCallRuntime {
         let dispatch_terminal_outcome_reached = Arc::clone(&terminal_outcome_reached);
         let dispatch_call = call.clone();
 
+        // Code-mode callbacks can resume outside the turn's local span ancestry.
         let dispatch_span = trace_span!(
             "dispatch_tool_call_with_code_mode_result",
             otel.name = %call.tool_name,
             tool_name = %call.tool_name,
+            thread.id = %session.thread_id,
             call_id = call.call_id.as_str(),
             aborted = false,
         );

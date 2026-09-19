@@ -1,6 +1,6 @@
 use crate::config::MultiAgentV2Config;
 use crate::context::MultiAgentRoleInstructions;
-use crate::session::turn_context::TurnContext;
+use crate::session::step_context::StepContext;
 use codex_protocol::config_types::MultiAgentMode;
 use codex_protocol::openai_models::MultiAgentRoleMessages;
 use codex_protocol::openai_models::ReasoningEffort;
@@ -50,7 +50,7 @@ You may also see them addressed as to=/root/..., which indicates your identity i
 const DEFAULT_MULTI_AGENT_V2_MODEL_OVERRIDE_USAGE_HINT_TEXT: &str = "Full-history forks, when permitted by the configured fork_turns policy, inherit the parent model and reasoning effort and do not accept overrides. Only set `model` or `reasoning_effort` when explicitly requested by the user, applicable `AGENTS.md` instructions, or skill instructions; when doing so, set `fork_turns` to `\"none\"` or a positive integer string.";
 const DEFAULT_MULTI_AGENT_V2_WAIT_AGENT_USAGE_HINT_TEXT: &str =
     "When calling `wait_agent`, prefer longer waits (minutes) to avoid busy polling.";
-const DEFAULT_MULTI_AGENT_V2_SHARED_USAGE_HINT_TEXT: &str = r#"Note that collaboration tools cannot be called from inside `functions.exec`. Call `spawn_agent`, `send_message`, `followup_task`, `wait_agent`, `interrupt_agent`, and `list_agents` only as direct tool calls using the recipient shown in their tool definitions, such as `to=functions.collaboration.spawn_agent`, since they are intentionally absent from the `functions.exec` `tools.*` namespace. Available tools in `functions.exec` are explicitly described with a `tools` namespace in the developer message.
+const DEFAULT_MULTI_AGENT_V2_SHARED_USAGE_HINT_TEXT: &str = r#"Note that collaboration tools cannot be called from inside `functions.exec`. Call `spawn_agent`, `send_message`, `followup_task`, `wait_agent`, `interrupt_agent`, and `list_agents` only as direct tool calls using the recipient shown in their tool definitions, since they are intentionally absent from the `functions.exec` `tools.*` namespace. Available tools in `functions.exec` are explicitly described with a `tools` namespace in the developer message.
 
 All agents share the same directory. In detail:
 - All agents have access to the same container and filesystem as you.
@@ -65,15 +65,17 @@ pub(crate) struct ResolvedMultiAgentV2UsageHints {
 }
 
 pub(super) fn usage_hint_text(
-    turn_context: &TurnContext,
+    step_context: &StepContext,
     session_source: &SessionSource,
 ) -> Option<MultiAgentRoleInstructions> {
+    let turn_context = step_context.turn.as_ref();
     if turn_context.multi_agent_version != MultiAgentVersion::V2 {
         return None;
     }
 
-    let catalog = turn_context
-        .model_info()
+    let catalog = step_context
+        .settings
+        .model_info
         .model_messages
         .as_ref()
         .and_then(|messages| messages.multi_agent.as_ref())
@@ -100,6 +102,13 @@ pub(crate) fn resolve_usage_hints(
     catalog: Option<&MultiAgentRoleMessages>,
     omit_update_plan_instructions: bool,
 ) -> ResolvedMultiAgentV2UsageHints {
+    let spawn_agent_recipient = config.tool_namespace.as_deref().map_or_else(
+        || "functions.spawn_agent".to_string(),
+        |namespace| format!("functions.{namespace}.spawn_agent"),
+    );
+    let shared_usage_hint = format!(
+        "{DEFAULT_MULTI_AGENT_V2_SHARED_USAGE_HINT_TEXT} Use the spawn recipient shown in the tool definition, such as `to={spawn_agent_recipient}`, when delegating work."
+    );
     let resolve_role = |configured: Option<&str>, catalog: Option<&str>, bundled: &str| {
         // Configured roles take precedence; empty configured or catalog roles suppress fallback.
         if let Some(configured) = configured {
@@ -124,7 +133,7 @@ pub(crate) fn resolve_usage_hints(
             String::new()
         };
         let mut text = format!(
-            "{base}\n{DEFAULT_MULTI_AGENT_V2_SHARED_USAGE_HINT_TEXT}\n{wait_agent_guidance}There are {max_concurrency} available concurrency slots, meaning that up to {max_concurrency} agents can be active at once, including you."
+            "{base}\n{shared_usage_hint}\n{wait_agent_guidance}There are {max_concurrency} available concurrency slots, meaning that up to {max_concurrency} agents can be active at once, including you."
         );
         if config.expose_spawn_agent_model_overrides {
             text.push_str("\n\n");
@@ -152,13 +161,15 @@ pub(crate) fn resolve_usage_hints(
     }
 }
 
-pub(crate) fn effective_multi_agent_mode(turn_context: &TurnContext) -> Option<MultiAgentMode> {
+pub(crate) fn effective_multi_agent_mode(step_context: &StepContext) -> Option<MultiAgentMode> {
+    let turn_context = step_context.turn.as_ref();
+    let settings = &step_context.settings;
     if turn_context.multi_agent_version != MultiAgentVersion::V2 {
         return None;
     }
 
-    let catalog_mode = turn_context
-        .model_info()
+    let catalog_mode = settings
+        .model_info
         .model_messages
         .as_ref()
         .and_then(|messages| messages.multi_agent.as_ref())
@@ -174,7 +185,7 @@ pub(crate) fn effective_multi_agent_mode(turn_context: &TurnContext) -> Option<M
     // of an effort-derived built-in policy.
     let multi_agent_mode = match mode_hint_text {
         Some(hint_text) => MultiAgentMode::Custom(hint_text.to_string()),
-        None => match turn_context.effective_reasoning_effort() {
+        None => match settings.effective_reasoning_effort() {
             Some(ReasoningEffort::Ultra) => catalog_mode
                 .and_then(|messages| messages.proactive.clone())
                 .map(MultiAgentMode::Custom)

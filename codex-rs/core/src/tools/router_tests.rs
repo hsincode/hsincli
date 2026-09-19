@@ -27,6 +27,7 @@ use codex_protocol::dynamic_tools::DynamicToolSpec;
 use codex_protocol::models::ContentItem;
 use codex_protocol::models::FunctionCallOutputBody;
 use codex_protocol::models::ResponseItem;
+use codex_protocol::openai_models::ToolMode;
 use codex_tools::ResponsesApiNamespace;
 use codex_tools::ResponsesApiNamespaceTool;
 use codex_tools::ToolName;
@@ -237,6 +238,42 @@ async fn build_tool_call_uses_namespace_for_registry_name() -> anyhow::Result<()
     }
 
     Ok(())
+}
+
+#[test]
+fn direct_source_accepts_reserved_and_configured_multi_agent_namespaces() {
+    for namespace in ["agents", "collaboration"] {
+        let call = ToolCall {
+            tool_name: ToolName::namespaced(namespace, "spawn_agent"),
+            call_id: "call-plaintext".to_string(),
+            payload: ToolPayload::Function {
+                arguments: "{}".to_string(),
+            },
+            encrypted_function_args: Some(Vec::new()),
+        };
+        assert_eq!(call.direct_source(), ToolCallSource::DirectPlaintextMessage);
+    }
+
+    let router = ToolRouter::from_parts(
+        crate::tools::registry::ToolRegistry::empty_for_test(),
+        Vec::new(),
+        ToolMode::Direct,
+        BTreeMap::new(),
+        /*tool_namespaces_info*/ None,
+        &[ToolName::namespaced("custom_agents", "send_message")],
+    );
+    let custom_call = ToolCall {
+        tool_name: ToolName::namespaced("custom_agents", "spawn_agent"),
+        call_id: "call-custom-plaintext".to_string(),
+        payload: ToolPayload::Function {
+            arguments: "{}".to_string(),
+        },
+        encrypted_function_args: Some(Vec::new()),
+    };
+    assert_eq!(
+        router.direct_source(&custom_call),
+        ToolCallSource::DirectPlaintextMessage
+    );
 }
 
 #[tokio::test]
@@ -543,7 +580,11 @@ async fn extension_tool_executors_are_model_visible_and_dispatchable() -> anyhow
         internal_chat_message_metadata_passthrough: None,
     };
     session
-        .record_conversation_items(&turn, std::slice::from_ref(&history_item))
+        .record_conversation_items(
+            &turn,
+            turn.model_info(),
+            std::slice::from_ref(&history_item),
+        )
         .await;
     let expected_history_item = session
         .clone_history()

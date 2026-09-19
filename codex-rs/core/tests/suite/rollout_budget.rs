@@ -26,7 +26,7 @@ use std::time::Duration;
 use test_case::test_case;
 use tokio::time::timeout;
 
-const MULTI_AGENT_V2_NAMESPACE: &str = "collaboration";
+const MULTI_AGENT_V2_NAMESPACE: &str = "agents";
 
 fn rollout_budget() -> RolloutBudgetConfig {
     RolloutBudgetConfig {
@@ -376,12 +376,7 @@ async fn compaction_budget_exhaustion_fails_without_retry(
                 reminder_at_remaining_tokens: vec![5],
                 ..rollout_budget()
             });
-            if remote_v2 {
-                config
-                    .features
-                    .enable(Feature::RemoteCompactionV2)
-                    .expect("test config should allow remote compaction v2");
-            } else {
+            if !remote_v2 {
                 config.model_provider.name = "OpenAI-compatible test provider".to_string();
             }
         })
