@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HsinCLI: effort と multi_agent_v2</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #121a2d;
+      --panel-2: #18233b;
+      --line: #2a3a5e;
+      --text: #eef4ff;
+      --muted: #a8b8d8;
+      --cyan: #53d7ff;
+      --violet: #b79aff;
+      --green: #67e4ad;
+      --yellow: #ffd477;
+      --orange: #ffae73;
+      --shadow: 0 18px 48px rgba(0, 0, 0, .24);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% -10%, rgba(83, 215, 255, .14), transparent 38rem),
+        radial-gradient(circle at 95% 10%, rgba(183, 154, 255, .15), transparent 34rem),
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans",
+        "Yu Gothic", Meiryo, sans-serif;
+    }
+    .page { width: min(1160px, calc(100% - 32px)); margin: 0 auto; padding: 36px 0 64px; }
+    .hero, .card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: clamp(26px, 5vw, 56px);
+      background: linear-gradient(135deg, rgba(24, 35, 59, .96), rgba(17, 25, 45, .93));
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::after {
+      content: "MAX  ×  ULTRA  ×  V2";
+      position: absolute;
+      right: -20px;
+      bottom: -34px;
+      color: rgba(255, 255, 255, .045);
+      font-size: clamp(34px, 8vw, 94px);
+      font-weight: 800;
+      letter-spacing: .08em;
+      transform: rotate(-9deg);
+      pointer-events: none;
+    }
+    .eyebrow, .tag, .lane-label, .step-index {
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .eyebrow { color: var(--cyan); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 780px; margin: 10px 0 16px; font-size: clamp(31px, 5vw, 60px); line-height: 1.1; letter-spacing: -.04em; }
+    .hero-lead { max-width: 790px; color: var(--muted); font-size: clamp(16px, 2vw, 20px); }
+    .axis-note {
+      display: inline-flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; align-items: center;
+      color: #dbe6ff;
+    }
+    .pill {
+      display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 11px;
+      font-size: 13px; font-weight: 800; border: 1px solid transparent;
+    }
+    .pill.cyan { color: #c7f5ff; background: rgba(83, 215, 255, .12); border-color: rgba(83, 215, 255, .42); }
+    .pill.violet { color: #eee5ff; background: rgba(183, 154, 255, .13); border-color: rgba(183, 154, 255, .42); }
+    .pill.green { color: #d7ffed; background: rgba(103, 228, 173, .12); border-color: rgba(103, 228, 173, .40); }
+    .pill.yellow { color: #fff2c8; background: rgba(255, 212, 119, .12); border-color: rgba(255, 212, 119, .38); }
+    .section { margin-top: 24px; }
+    .card { padding: clamp(22px, 3.2vw, 36px); background: rgba(18, 26, 45, .92); }
+    h2 { margin-bottom: 8px; font-size: clamp(22px, 3vw, 31px); line-height: 1.25; }
+    .section-lead { color: var(--muted); margin-bottom: 24px; }
+    .flow-lanes { display: grid; gap: 16px; }
+    .lane { background: rgba(24, 35, 59, .82); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+    .lane-label { margin-bottom: 12px; }
+    .lane.max .lane-label { color: var(--cyan); }
+    .lane.ultra .lane-label { color: var(--violet); }
+    .flow { display: flex; align-items: stretch; gap: 9px; flex-wrap: wrap; }
+    .node {
+      flex: 1 1 175px; min-height: 84px; display: flex; flex-direction: column; justify-content: center;
+      border-radius: 13px; padding: 13px 15px; background: #10182b; border: 1px solid #304368;
+    }
+    .node strong { display: block; font-size: 17px; line-height: 1.25; }
+    .node small { display: block; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    .node.key { background: linear-gradient(145deg, rgba(83, 215, 255, .17), rgba(16, 24, 43, .95)); border-color: rgba(83, 215, 255, .55); }
+    .node.special { background: linear-gradient(145deg, rgba(183, 154, 255, .18), rgba(16, 24, 43, .95)); border-color: rgba(183, 154, 255, .6); }
+    .arrow { align-self: center; color: #7189b8; font-size: 26px; line-height: 1; padding: 0 1px; }
+    .caption { color: var(--muted); margin: 13px 0 0; font-size: 14px; }
+    .two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+    .mini { border-radius: 14px; padding: 16px; border: 1px dashed #3b4c73; background: rgba(16, 24, 43, .6); }
+    .mini strong { display: block; margin-bottom: 5px; }
+    .mini p { margin: 0; color: var(--muted); font-size: 14px; }
+    .branch {
+      display: grid; grid-template-columns: 1fr 1.4fr; gap: 18px; align-items: stretch;
+    }
+    .branch-root {
+      min-height: 190px; display: flex; flex-direction: column; justify-content: center;
+      border: 1px solid rgba(255, 212, 119, .48); border-radius: 16px; padding: 22px;
+      background: linear-gradient(145deg, rgba(255, 212, 119, .13), rgba(16, 24, 43, .72));
+    }
+    .branch-root strong { font-size: 22px; line-height: 1.25; }
+    .branch-root span { color: var(--muted); margin-top: 8px; }
+    .paths { display: grid; gap: 12px; }
+    .path {
+      position: relative; border: 1px solid var(--line); border-radius: 14px; padding: 17px 18px 17px 22px;
+      background: rgba(24, 35, 59, .78);
+    }
+    .path::before {
+      content: ""; position: absolute; width: 13px; height: 13px; border-radius: 50%;
+      left: -7px; top: 25px; background: var(--cyan); box-shadow: 0 0 0 5px rgba(83, 215, 255, .1);
+    }
+    .path.false::before { background: var(--violet); box-shadow: 0 0 0 5px rgba(183, 154, 255, .1); }
+    .path strong { display: block; margin-bottom: 4px; }
+    .path p { color: var(--muted); margin: 0; font-size: 14px; }
+    .matrix-wrap { overflow-x: auto; margin-top: 24px; }
+    table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 14px 15px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { color: #dbe6ff; background: rgba(42, 58, 94, .45); font-size: 13px; }
+    td { color: #d3def4; }
+    tbody tr:last-child td { border-bottom: 0; }
+    td:first-child { color: var(--text); font-weight: 800; white-space: nowrap; }
+    .example {
+      display: grid; grid-template-columns: 1fr 1.15fr; gap: 18px; align-items: stretch;
+    }
+    .config {
+      margin: 0; padding: 18px; border-radius: 14px; overflow-x: auto; color: #dce8ff;
+      background: #0a1120; border: 1px solid #2e426a; font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .explain { border-radius: 14px; padding: 20px; background: linear-gradient(145deg, rgba(103, 228, 173, .13), rgba(16, 24, 43, .8)); border: 1px solid rgba(103, 228, 173, .42); }
+    .explain h3 { color: var(--green); margin-bottom: 8px; }
+    .explain p { color: #d4e5e0; margin-bottom: 0; }
+    .footnote { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+    .sources { color: var(--muted); font-size: 13px; }
+    .sources a { color: var(--cyan); }
+    @media (max-width: 760px) {
+      .page { width: min(100% - 20px, 1160px); padding-top: 10px; }
+      .hero, .card { border-radius: 17px; }
+      .branch, .example, .two-col { grid-template-columns: 1fr; }
+      .branch-root { min-height: 0; }
+      .flow { display: grid; grid-template-columns: 1fr; }
+      .arrow { justify-self: center; transform: rotate(90deg); }
+      .node { min-height: 70px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">HsinCLI configuration map</div>
+      <h1><span style="color: var(--cyan)">effort</span> と <span style="color: var(--violet)">multi_agent_v2</span> の違い</h1>
+      <p class="hero-lead">
+        2つは別の設定軸です。<strong>Max / Ultra は推論レベル</strong>、
+        <strong>multi_agent_v2 は委譲の仕組み</strong>を決めます。
+      </p>
+      <div class="axis-note">
+        <span class="pill cyan">推論の深さ</span>
+        <span>＋</span>
+        <span class="pill violet">エージェント委譲の方式</span>
+      </div>
+    </header>
+
+    <section class="section card">
+      <h2>1. Max と Ultra</h2>
+      <p class="section-lead">Ultra は単純な「Max より大きい数値」ではなく、V2 の既定の委譲モードも切り替える特別な選択です。</p>
+      <div class="flow-lanes">
+        <div class="lane max">
+          <div class="lane-label">Max</div>
+          <div class="flow">
+            <div class="node key"><strong>Max</strong><small>通常の最大推論レベル</small></div>
+            <div class="arrow">→</div>
+            <div class="node"><strong>モデル設定を解決</strong><small>通常は API に max 相当を送る</small></div>
+            <div class="arrow">→</div>
+            <div class="node special"><strong>V2: 明示要求中心</strong><small>必要な時に委譲を依頼する</small></div>
+          </div>
+          <p class="caption">V2 が有効な場合の既定値です。V2 でなければ、V2 専用の委譲モードは入りません。</p>
+        </div>
+        <div class="lane ultra">
+          <div class="lane-label">Ultra</div>
+          <div class="flow">
+            <div class="node special"><strong>Ultra</strong><small>HsinCLI の拡張レベル</small></div>
+            <div class="arrow">→</div>
+            <div class="node"><strong>モデル設定を解決</strong><small>multi-agent 用設定 → max → 非 Ultra の順で縮退</small></div>
+            <div class="arrow">→</div>
+            <div class="node special"><strong>V2: 積極的に委譲</strong><small>必要なら自律的にサブエージェントを使う</small></div>
+          </div>
+          <p class="caption">モデルが Ultra を API で受け付けるとは限りません。ワイヤ上の値と、V2 の委譲指示は別々に解決されます。</p>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="mini">
+          <strong><span class="pill yellow">V2 なし</span> Ultra</strong>
+          <p>推論レベルの拡張として扱われます。V2 の自律委譲モードは有効になりません。</p>
+        </div>
+        <div class="mini">
+          <strong><span class="pill green">V2 あり</span> Ultra</strong>
+          <p>推論レベルに加えて、積極的な委譲（proactive）が既定になります。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>2. multi_agent_v2 = true / false</h2>
+      <p class="section-lead">true は V2 を明示的に選びます。false または未指定は、モデルカタログと他の設定から実行方式を決めます。</p>
+      <div class="branch">
+        <div class="branch-root">
+          <span class="step-index">設定</span>
+          <strong>features.<br>multi_agent_v2</strong>
+          <span>委譲 API の世代を決める分岐</span>
+        </div>
+        <div class="paths">
+          <div class="path">
+            <strong><span class="pill cyan">true</span> → V2 を強制</strong>
+            <p>V2 の collaboration ツールと、Ultra / Max に応じた委譲モードを使います。</p>
+          </div>
+          <div class="path false">
+            <strong><span class="pill violet">false / 未指定</span> → 周辺設定を確認</strong>
+            <p>agents.enabled、モデルカタログの multi_agent_version、従来の Collab 設定を順に見て、V2 / V1 / 無効を決めます。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="matrix-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>設定</th>
+              <th>推論</th>
+              <th>委譲</th>
+              <th>覚え方</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Max + false</td>
+              <td>最大レベル</td>
+              <td>モデル・カタログ依存</td>
+              <td>既定の最大推論</td>
+            </tr>
+            <tr>
+              <td>Ultra + false</td>
+              <td>モデルが非対応なら max 等へ縮退</td>
+              <td>V2 は強制しない</td>
+              <td>Ultra を表示できても、V2 とは限らない</td>
+            </tr>
+            <tr>
+              <td>Max + true</td>
+              <td>最大レベル</td>
+              <td>V2・明示要求中心</td>
+              <td>最大推論 ＋ V2</td>
+            </tr>
+            <tr>
+              <td>Ultra + true</td>
+              <td>Ultra の解決規則に従う</td>
+              <td>V2・積極的な委譲</td>
+              <td>Ultra の主な組み合わせ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>3. Luna の具体例</h2>
+      <p class="section-lead">Luna は bundled catalog では V1 で、Ultra を通常の対応レベルとして持ちません。</p>
+      <div class="example">
+        <pre class="config"><code>[features]
+multi_agent_v2 = true
+
+[model_reasoning_levels]
+"gpt-5.6-luna" = ["ultra"]</code></pre>
+        <div class="explain">
+          <h3>Luna → Ultra → V2</h3>
+          <p>
+            UI には Ultra を追加できますが、モデル側の対応レベルが変わるわけではありません。
+            リクエストの推論値は通常 max 相当へ縮退し、<strong>multi_agent_v2 = true</strong> が V2 を選びます。
+            そのため、実際の組み合わせは「max 相当の推論 ＋ V2 の委譲」です。
+          </p>
+        </div>
+      </div>
+      <p class="footnote">モデルカタログや server 側の設定に独自の multi_agent_mode_hint_text がある場合は、その指示が優先されます。</p>
+    </section>
+
+    <section class="section card">
+      <h2>実装・公式資料</h2>
+      <div class="sources">
+        <p>
+          HsinCLI の実装:
+          <a href="README.md">README</a> /
+          <a href="codex-rs/protocol/src/openai_models/reasoning_effort.rs">推論値の解決</a> /
+          <a href="codex-rs/core/src/session/multi_agents.rs">V2 委譲モード</a> /
+          <a href="codex-rs/core/src/config/mod.rs">multi_agent_version の決定</a>
+        </p>
+        <p>
+          OpenAI 公式の一般説明:
+          <a href="https://developers.openai.com/api/docs/guides/latest-model?model=gpt-5.2" target="_blank" rel="noreferrer">reasoning.effort ガイド</a>
+          （推論トークン数を調整する API パラメータ）
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

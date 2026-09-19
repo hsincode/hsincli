@@ -48,7 +48,7 @@ max_turns = 3
 
 - `default_turns`: 省略時の継承ターン数（`none`、`all`、正の整数）
 - `max_turns`: 数値指定の上限。省略すると上限なし
-- `allow_all`: `fork_turns = "all"` の許可
+- `allow_all`: `fork_turns = "all"` の許可。`max_turns` を設定している場合は、それだけで `all` は拒否されます
 - `service_tier`: 新しいターンで使う既定のサービスティア。`default`、`priority`、`flex` を指定できます（旧名 `fast` も使用可能）
 - `model_service_tiers`: モデル名ごとのサービスティア。モデル別設定が全体の `service_tier` より優先されます
 - `agents.default_subagent_service_tier`: 既定モデルで起動するサブエージェントのサービスティア

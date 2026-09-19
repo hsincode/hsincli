@@ -83,3 +83,57 @@ fn hsin_rejects_invalid_configuration_before_spawning() {
         assert!(config.hsin.validate().is_err(), "{input}");
     }
 }
+
+#[test]
+fn a_numeric_limit_is_described_exactly_as_it_is_enforced() {
+    let config: ConfigToml = toml::from_str(
+        r#"
+        [hsin.fork]
+        default_turns = 1
+        max_turns = 3
+        allow_all = false
+    "#,
+    )
+    .unwrap();
+    let policy = config.hsin.fork;
+    let description = policy.tool_description();
+    // The description is the only channel for the policy, since the reserved
+    // `collaboration.spawn_agent` schema cannot carry an enum. Every value it offers must
+    // resolve, and every value it withholds must not.
+    assert!(description.contains("from 1 to 3"), "{description}");
+    assert!(!description.contains("all"), "{description}");
+    for value in ["none", "1", "2", "3"] {
+        assert!(policy.resolve(Some(value)).is_ok(), "{value}");
+    }
+    for value in ["all", "4"] {
+        assert!(policy.resolve(Some(value)).is_err(), "{value}");
+    }
+}
+
+#[test]
+fn a_numeric_limit_excludes_full_history_even_when_allow_all_is_set() {
+    let config: ConfigToml = toml::from_str(
+        r#"
+        [hsin.fork]
+        allow_all = true
+        max_turns = 2
+    "#,
+    )
+    .unwrap();
+    let policy = config.hsin.fork;
+    // `check` rejects `all` whenever a limit exists, so the description must not offer it.
+    assert!(policy.resolve(Some("all")).is_err());
+    assert!(!policy.tool_description().contains("all"));
+}
+
+#[test]
+fn without_a_limit_the_description_carries_the_policy() {
+    // Recent-turn counts are unbounded here, so the description states the rule instead of
+    // a range.
+    let permissive: ConfigToml = toml::from_str("[hsin.fork]\nallow_all = true").unwrap();
+    assert!(permissive.hsin.fork.tool_description().contains("all"));
+
+    let restrictive: ConfigToml = toml::from_str("").unwrap();
+    // Naming `all` only to forbid it invites the model to try it anyway.
+    assert!(!restrictive.hsin.fork.tool_description().contains("all"));
+}
