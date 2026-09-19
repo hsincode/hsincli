@@ -112,6 +112,12 @@ fn catalog_description(catalog: &[ModelInfo], effort: &ReasoningEffort) -> Strin
 }
 
 impl ModelsManager for ReasoningLevelOverrideManager {
+    // The trait default is a silent no-op, which would drop the startup discovery policy
+    // whenever this wrapper is in front of the real manager.
+    fn set_api_key_model_discovery_enabled(&self, enabled: bool) {
+        self.inner.set_api_key_model_discovery_enabled(enabled);
+    }
+
     fn raw_model_catalog(
         &self,
         refresh_strategy: RefreshStrategy,

@@ -1,7 +1,7 @@
 # HsinCLI
 
 A minimal, unofficial fork of [OpenAI Codex](https://github.com/openai/codex),
-based on the stable release `rust-v0.154.0` (`codex-cli 0.154.0`).
+based on the stable release `rust-v0.155.0` (`codex-cli 0.155.0`).
 
 The canonical repository is [hsincode/hsincli](https://github.com/hsincode/hsincli),
 with `main` as the default branch. It replaces the former Codeberg repository.
@@ -19,7 +19,7 @@ Rust/rustup, Python 3.11+, uv, ripgrep, and bubblewrap.
 ```sh
 make tools
 make install                 # release build with ~/.local/bin/hsin and hsincli
-hsin --version               # hsin 0.154.0
+hsin --version               # hsin 0.155.0
 hsin login
 hsin
 ```
@@ -110,17 +110,28 @@ branding, and build tooling. Preserve the Apache-2.0 license and upstream notice
 
 ## Validation
 
-The six affected packages ran 9,207 tests. After reviewing and updating the
-branding/version snapshots and the TUI startup-name check, the 5,250-test
-follow-up covering all non-core packages and the agent/history tests passed,
-including the final focused rerun of the status-copy snapshot test.
+The six affected packages ran 9,656 tests, with 44 failures and one timeout on
+the first pass. Thirty-two snapshots needed the 0.155.0 version string plus
+HsinCLI branding on the voice screens upstream added, and two tests named models
+that 0.155.0 renamed or dropped. The rerun after those updates passed 9,643
+tests, leaving the thirteen failures described below.
 
-One core integration test remains unresolved:
-`suite::hooks::async_hook_finishing_while_idle_waits_for_the_next_turn::user_turn`.
-It times out after retry, matching the failure recorded by the previous fork.
-The whole workspace suite was not run. The config schema was regenerated, and
-`just bazel-lock-update` completed without changes to `MODULE.bazel.lock`.
-Scoped `just fix` completed successfully. Its unrelated upstream unused-import
-cleanup was excluded from the fork patch.
-The built CLI reports `hsin 0.154.0`; installing the release build is a separate
+Eleven failures predate the import and reproduce on the merge base, so they
+belong to the in-flight fork work rather than to the release: the six
+`hsin_fork` policy tests, `debug_config`, the status-line reasoning test, and
+the background-task, new-session, and startup default tests.
+
+Two failures depend on the environment rather than on the fork.
+`shell_snapshot::tests::snapshot_discovers_and_redacts_shell_initialized_credentials`,
+new in 0.155.0, times out after 60 seconds on unmodified upstream as well.
+`suite::mcp_optional_startup_grace::...::zero_grace_respects_server_startup_timeout`
+fails in the primary working copy and passes for the same commit built in a
+separate worktree; optional MCP startup begins roughly 200 ms later in the
+former, past the 250 ms server startup timeout the test configures.
+
+The whole workspace suite was not run. The config schema was regenerated without
+a diff, `make fmt` reported no changes, and `just bazel-lock-update` completed
+without changes to `MODULE.bazel.lock`. Scoped `just fix` proposed only an
+unrelated upstream unused-import cleanup, which was excluded from the fork patch.
+The built CLI reports `hsin 0.155.0`; installing the release build is a separate
 step using `make install`.

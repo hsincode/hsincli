@@ -89,18 +89,32 @@ impl ForkPolicy {
         }
     }
 
+    /// The `fork_turns` guidance handed to the model.
+    ///
+    /// The policy lives here rather than in the schema because `fork_turns` rides on
+    /// `collaboration.spawn_agent`, which the Responses API reserves: any structural
+    /// departure from the schema it has configured — an `enum` of the permitted values
+    /// included — fails the whole request with a 400. `check` is what actually enforces
+    /// the policy; this text is how the model learns it before spending a round trip.
     pub fn tool_description(&self) -> String {
-        let full = if self.allow_all && self.max_turns.is_none() {
-            "`all` is also allowed."
+        if let Some(max) = self.max_turns {
+            // `all` is rejected outright whenever a numeric limit exists, so it is left
+            // unnamed here as well. See `check`.
+            return format!(
+                "Optional history to inherit. Defaults to `{}`. Use `none` for no parent \
+                 history, or a number from 1 to {max} for that many recent turns.",
+                self.default_turns
+            );
+        }
+        let full = if self.allow_all {
+            " `all` inherits the whole conversation."
         } else {
-            "`all` is disabled."
+            // Naming `all` only to forbid it invites the model to try it anyway.
+            ""
         };
-        let limit = self
-            .max_turns
-            .map(|n| format!(" Maximum: {n} turns."))
-            .unwrap_or_default();
         format!(
-            "Optional history to inherit. Defaults to `{}`. Use `none` or a positive integer string for recent turns. {full}{limit}",
+            "Optional history to inherit. Defaults to `{}`. Use `none` for no parent history, \
+             or a positive integer string for that many recent turns.{full}",
             self.default_turns
         )
     }
