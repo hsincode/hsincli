@@ -1,7 +1,7 @@
 # HsinCLI
 
 A minimal, unofficial fork of [OpenAI Codex](https://github.com/openai/codex),
-based on the stable release `rust-v0.155.0` (`codex-cli 0.155.0`).
+based on the stable release `rust-v0.155.1` (`codex-cli 0.155.1`).
 
 The canonical repository is [hsincode/hsincli](https://github.com/hsincode/hsincli),
 with `main` as the default branch. It replaces the former Codeberg repository.
@@ -19,7 +19,7 @@ Rust/rustup, Python 3.11+, uv, ripgrep, and bubblewrap.
 ```sh
 make tools
 make install                 # release build with ~/.local/bin/hsin and hsincli
-hsin --version               # hsin 0.155.0
+hsin --version               # hsin 0.155.1
 hsin login
 hsin
 ```
@@ -58,6 +58,10 @@ allow_all = false
 default_turns = 1
 max_turns = 3
 ```
+
+Multi-Agent V2 tools use the `agents` namespace by default. Some models reserve
+`collaboration` for a server-configured schema; choose a different namespace unless
+the model explicitly supports that schema.
 
 V2 `fork_turns` accepts `"none"`, `"all"`, or a positive integer string.
 Omitted or blank values use `default_turns`, which defaults to one recent
@@ -133,5 +137,5 @@ The whole workspace suite was not run. The config schema was regenerated without
 a diff, `make fmt` reported no changes, and `just bazel-lock-update` completed
 without changes to `MODULE.bazel.lock`. Scoped `just fix` proposed only an
 unrelated upstream unused-import cleanup, which was excluded from the fork patch.
-The built CLI reports `hsin 0.155.0`; installing the release build is a separate
+The built CLI reports `hsin 0.155.1`; installing the release build is a separate
 step using `make install`.

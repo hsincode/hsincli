@@ -7,7 +7,7 @@ before:
 /status
 
 ╭──────────────────────────────────────────────────────────────────────────╮
-│  >_ HsinCLI (v0.155.0)                                                   │
+│  >_ HsinCLI (v0.155.1)                                                   │
 │                                                                          │
 │ Visit https://chatgpt.com/codex/settings/usage for up-to-date            │
 │ information on rate limits and credits                                   │
@@ -39,7 +39,7 @@ after:
 /status
 
 ╭───────────────────────────────────────────────────────────────────────────╮
-│  >_ HsinCLI (v0.155.0)                                                    │
+│  >_ HsinCLI (v0.155.1)                                                    │
 │                                                                           │
 │ Visit https://chatgpt.com/codex/settings/usage for up-to-date             │
 │ information on rate limits and credits                                    │

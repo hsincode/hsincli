@@ -77,7 +77,7 @@ mod hsin_fork;
 
 const SPAWN_CALL_ID: &str = "spawn-call-1";
 const MULTI_AGENT_V1_NAMESPACE: &str = "multi_agent_v1";
-const MULTI_AGENT_V2_NAMESPACE: &str = "collaboration";
+const MULTI_AGENT_V2_NAMESPACE: &str = "agents";
 const TURN_0_FORK_PROMPT: &str = "seed fork context";
 const TURN_1_PROMPT: &str = "spawn a child and continue";
 const TURN_2_NO_WAIT_PROMPT: &str = "follow up without wait";
@@ -2263,8 +2263,8 @@ async fn multi_agent_v2_spawn_sends_agent_message_to_child(
             !child_request
                 .body_json()
                 .to_string()
-                .contains("\"name\":\"collaboration\""),
-            "leaf workers must not receive collaboration tools",
+                .contains("\"name\":\"agents\""),
+            "leaf workers must not receive agents tools",
         );
     }
     if plaintext {

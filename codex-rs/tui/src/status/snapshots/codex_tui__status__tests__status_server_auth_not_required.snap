@@ -5,7 +5,7 @@ expression: rendered
 /status
 
 ╭─────────────────────────────────────────────────────────────────────────────╮
-│  >_ HsinCLI (v0.155.0)                                                      │
+│  >_ HsinCLI (v0.155.1)                                                      │
 │                                                                             │
 │  Model:            gpt-5.6-sol (reasoning none, summaries auto)             │
 │  Model provider:   server-ollama                                            │

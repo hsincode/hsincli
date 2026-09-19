@@ -70,6 +70,10 @@ impl ToolCallRuntime {
             .create_diff_consumer(tool_name)
     }
 
+    pub(crate) fn direct_source(&self, call: &ToolCall) -> ToolCallSource {
+        self.step_context.tool_router.direct_source(call)
+    }
+
     #[instrument(level = "trace", skip_all)]
     pub(crate) fn handle_tool_call(
         self,
@@ -77,7 +81,7 @@ impl ToolCallRuntime {
         cancellation_token: CancellationToken,
     ) -> impl std::future::Future<Output = Result<ResponseItemEnvelope, CodexErr>> {
         let error_call = call.clone();
-        let source = call.direct_source();
+        let source = self.direct_source(&call);
         let future = self.handle_tool_call_with_source(call, source, cancellation_token);
         async move {
             match future.await {

@@ -1,6 +1,6 @@
  # HsinCLI
 
-OpenAI Codex CLI 0.155.0 をベースにした非公式フォークです。設定・認証・セッションを Codex から分離し、サブエージェントの履歴継承を制御できます。
+OpenAI Codex CLI 0.155.1 をベースにした非公式フォークです。設定・認証・セッションを Codex から分離し、サブエージェントの履歴継承を制御できます。
 
 ## 主な機能
 
@@ -53,6 +53,7 @@ max_turns = 3
 - `model_service_tiers`: モデル名ごとのサービスティア。モデル別設定が全体の `service_tier` より優先されます
 - `agents.default_subagent_service_tier`: 既定モデルで起動するサブエージェントのサービスティア
 - `model_reasoning_levels`: モデルごとに追加で提示する推論レベル。カタログにあるレベルは変更しません
+- `features.multi_agent_v2.tool_namespace`: V2 の予約ツールを公開する名前空間。既定値は `agents` です。`collaboration` は一部モデルで予約されているため、スキーマが一致しない設定では使用しないでください
 
 サービスティアはモデルが対応している場合だけリクエストに適用されます。未設定の場合はプロバイダーとモデルの既定値が使われます。
 
