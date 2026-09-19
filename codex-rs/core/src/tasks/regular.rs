@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use tokio_util::sync::CancellationToken;
 
+use crate::advisor;
+use crate::advisor::AdvisorOutcome;
 use crate::session::TurnInput;
 use crate::session::session::Session;
 use crate::session::turn::McpStartupRequirements;
@@ -12,6 +14,7 @@ use crate::session_startup_prewarm::SessionStartupPrewarmResolution;
 use crate::state::TaskKind;
 use codex_protocol::protocol::EventMsg;
 use codex_protocol::protocol::TurnStartedEvent;
+use codex_protocol::user_input::UserInput;
 use codex_thread_store::PersistContext;
 use tracing::Instrument;
 use tracing::trace_span;
@@ -82,6 +85,11 @@ impl SessionTask for RegularTask {
         let mut next_input = input;
         let mut prewarmed_client_session = prewarmed_client_session;
         let mut mcp_startup_requirements = McpStartupRequirements::default();
+        let mut consultations_left = if ctx.config.advisor.enabled {
+            ctx.config.advisor.max_consultations_per_turn
+        } else {
+            0
+        };
         loop {
             let last_agent_message = run_turn(
                 Arc::clone(&sess),
@@ -99,6 +107,29 @@ impl SessionTask for RegularTask {
                 return Ok(last_agent_message);
             }
             if !sess.input_queue.has_pending_input(&sess.active_turn).await {
+                // The turn is about to be reported complete. This is the one moment the
+                // agent will not ask for help on its own, so the advisor is consulted on
+                // a rule instead, and its findings go back as another round of input.
+                if consultations_left > 0 && !cancellation_token.is_cancelled() {
+                    consultations_left -= 1;
+                    let outcome = advisor::consult(
+                        Arc::clone(&sess),
+                        Arc::clone(&ctx),
+                        cancellation_token.child_token(),
+                    )
+                    .await;
+                    if let AdvisorOutcome::Guidance(guidance) = outcome {
+                        next_input = vec![TurnInput::UserInput {
+                            content: vec![UserInput::Text {
+                                text: advisor::guidance_prompt(&guidance),
+                                text_elements: Vec::new(),
+                            }],
+                            client_id: None,
+                            acceptance_order: None,
+                        }];
+                        continue;
+                    }
+                }
                 return Ok(last_agent_message);
             }
             next_input = Vec::new();

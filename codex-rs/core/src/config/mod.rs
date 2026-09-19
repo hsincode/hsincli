@@ -1074,6 +1074,9 @@ pub struct Config {
     /// Settings specific to the task-path-based multi-agent tool surface.
     pub multi_agent_v2: MultiAgentV2Config,
 
+    /// Settings for consulting a stronger model before a turn is declared complete.
+    pub advisor: AdvisorConfig,
+
     /// Context-window token budget configuration, when enabled.
     pub token_budget: Option<TokenBudgetConfig>,
     /// Runtime snapshot of configured token-budget preferences before startup activation.
@@ -1291,6 +1294,71 @@ impl Default for CurrentTimeReminderConfig {
             delivery_mode: CurrentTimeReminderDeliveryMode::AnyInference,
             sleep_tool: false,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct AdvisorConfig {
+    pub enabled: bool,
+    /// None means "the turn's own model", which gives a second opinion rather than an
+    /// escalation. The caller resolves it because only the turn knows its own model.
+    pub model: Option<String>,
+    pub reasoning_effort: Option<ReasoningEffort>,
+    pub max_consultations_per_turn: usize,
+    pub instructions: Option<String>,
+    pub max_transcript_chars: usize,
+    pub min_tool_calls: usize,
+}
+
+impl Default for AdvisorConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            model: None,
+            reasoning_effort: None,
+            max_consultations_per_turn: 1,
+            instructions: None,
+            max_transcript_chars: 240_000,
+            min_tool_calls: 1,
+        }
+    }
+}
+
+#[cfg(test)]
+pub(crate) fn resolve_advisor_config_for_test(config_toml: &ConfigToml) -> AdvisorConfig {
+    resolve_advisor_config(config_toml)
+}
+
+fn resolve_advisor_config(config_toml: &ConfigToml) -> AdvisorConfig {
+    let defaults = AdvisorConfig::default();
+    let Some(advisor) = config_toml.advisor.as_ref() else {
+        return defaults;
+    };
+    AdvisorConfig {
+        enabled: advisor.enabled.unwrap_or(defaults.enabled),
+        model: advisor
+            .model
+            .as_deref()
+            .map(str::trim)
+            .filter(|model| !model.is_empty())
+            .map(str::to_owned),
+        reasoning_effort: advisor.reasoning_effort.clone(),
+        // A zero here would consult forever, so the floor is one consultation.
+        max_consultations_per_turn: advisor
+            .max_consultations_per_turn
+            .unwrap_or(defaults.max_consultations_per_turn)
+            .max(1),
+        instructions: advisor
+            .instructions
+            .as_deref()
+            .map(str::trim)
+            .filter(|text| !text.is_empty())
+            .map(str::to_owned),
+        max_transcript_chars: advisor
+            .max_transcript_chars
+            .unwrap_or(defaults.max_transcript_chars)
+            .max(1_000),
+        min_tool_calls: advisor.min_tool_calls.unwrap_or(defaults.min_tool_calls),
     }
 }
 
@@ -3731,6 +3799,7 @@ impl Config {
         };
         let code_mode = resolve_code_mode_config(&cfg);
         let multi_agent_v2 = resolve_multi_agent_v2_config(&cfg);
+        let advisor = resolve_advisor_config(&cfg);
         let token_budget = resolve_token_budget_config(&cfg, &features)?;
         let rollout_budget = resolve_rollout_budget_config(&cfg, &features)?;
         let current_time_reminder = resolve_current_time_reminder_config(&cfg, &features)?;
@@ -4377,6 +4446,7 @@ impl Config {
             thread_unload_delay,
             ghost_snapshot,
             multi_agent_v2,
+            advisor,
             token_budget,
             token_budget_startup_config: None,
             rollout_budget,

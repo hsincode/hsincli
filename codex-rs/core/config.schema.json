@@ -6,6 +6,51 @@
       "description": "A path that is guaranteed to be absolute and normalized (though it is not guaranteed to be canonicalized or exist on the filesystem).\n\nIMPORTANT: When deserializing an `AbsolutePathBuf`, a base path must be set using [AbsolutePathBufGuard::new]. If no base path is set, the deserialization will fail unless the path being deserialized is already absolute.",
       "type": "string"
     },
+    "AdvisorToml": {
+      "additionalProperties": false,
+      "description": "Settings for the advisor: a second, stronger model consulted at the point where the agent would otherwise declare a turn complete.\n\nThe agent decides when to spawn subagents, but it does not decide whether to be reviewed — a run that ends convinced it is finished is exactly the one that never asks. So this fires on a rule rather than on the model's judgement.",
+      "properties": {
+        "enabled": {
+          "description": "Off unless asked for; the advisor costs a request against a more expensive model.",
+          "type": "boolean"
+        },
+        "instructions": {
+          "description": "Replaces the advisor's built-in instructions wholesale.",
+          "type": "string"
+        },
+        "max_consultations_per_turn": {
+          "description": "How many times the advisor may be consulted within one turn. Each consultation hands its guidance back to the agent, which may then keep working, so this is the bound on that back-and-forth. Defaults to 1.",
+          "format": "uint",
+          "minimum": 1.0,
+          "type": "integer"
+        },
+        "max_transcript_chars": {
+          "description": "Characters of rendered transcript to send. The tail is kept when the conversation is longer, since the recent turns are what the decision rests on. Defaults to 240000.",
+          "format": "uint",
+          "minimum": 1000.0,
+          "type": "integer"
+        },
+        "min_tool_calls": {
+          "description": "Skip the consultation when the turn did nothing worth reviewing, measured in tool calls. Defaults to 1, so a turn that only answered a question is not billed for an advisor pass.",
+          "format": "uint",
+          "minimum": 0.0,
+          "type": "integer"
+        },
+        "model": {
+          "description": "Model slug to consult, for example `gpt-5.6-sol`. Defaults to the turn's own model, which is useful for a second opinion but is not an escalation.",
+          "type": "string"
+        },
+        "reasoning_effort": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/ReasoningEffort"
+            }
+          ],
+          "description": "Reasoning effort for the advisor. Defaults to the advisor model's own default."
+        }
+      },
+      "type": "object"
+    },
     "AgentRoleToml": {
       "additionalProperties": false,
       "properties": {
@@ -6070,6 +6115,14 @@
   },
   "description": "Base config deserialized from ~/.codex/config.toml.",
   "properties": {
+    "advisor": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/AdvisorToml"
+        }
+      ],
+      "description": "Consult a stronger model before the agent finishes a turn."
+    },
     "agents": {
       "allOf": [
         {
