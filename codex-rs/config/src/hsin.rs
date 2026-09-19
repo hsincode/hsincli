@@ -91,11 +91,11 @@ impl ForkPolicy {
 
     /// The `fork_turns` guidance handed to the model.
     ///
-    /// The policy lives here rather than in the schema because `fork_turns` rides on
-    /// `collaboration.spawn_agent`, which the Responses API reserves: any structural
-    /// departure from the schema it has configured — an `enum` of the permitted values
-    /// included — fails the whole request with a 400. `check` is what actually enforces
-    /// the policy; this text is how the model learns it before spending a round trip.
+    /// The policy lives here rather than in the schema because users can configure the
+    /// reserved `collaboration.spawn_agent` namespace: any structural departure from the
+    /// schema it has configured — an `enum` of the permitted values included — fails the
+    /// whole request with a 400. `check` is what actually enforces the policy; this text
+    /// is how the model learns it before spending a round trip.
     pub fn tool_description(&self) -> String {
         if let Some(max) = self.max_turns {
             // `all` is rejected outright whenever a numeric limit exists, so it is left

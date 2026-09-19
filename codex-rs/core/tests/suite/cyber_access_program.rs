@@ -246,11 +246,11 @@ async fn cyber_access_program_is_inherited_by_child_turns() -> Result<()> {
         ])
     };
     for (namespace, fork_turns) in [
-        ("collaboration", "none"),
-        ("collaboration", "all"),
+        ("agents", "none"),
+        ("agents", "all"),
         ("multi_agent_v1", "none"),
     ] {
-        let is_v2 = namespace == "collaboration";
+        let is_v2 = namespace == "agents";
         let spawn_arguments = if is_v2 {
             json!({"message": "inspect the repository", "task_name": "worker", "fork_turns": fork_turns})
         } else {

@@ -43,7 +43,31 @@ pub struct ToolCall {
 
 impl ToolCall {
     pub(crate) fn direct_source(&self) -> ToolCallSource {
-        if self.tool_name.namespace.as_deref() == Some("collaboration")
+        if self.is_plaintext_message_for_namespace(|namespace| {
+            matches!(namespace, "agents" | "collaboration")
+        }) {
+            ToolCallSource::DirectPlaintextMessage
+        } else {
+            ToolCallSource::Direct
+        }
+    }
+
+    fn direct_source_for_namespace(&self, namespace: &str) -> ToolCallSource {
+        if self.is_plaintext_message_for_namespace(|candidate| candidate == namespace) {
+            ToolCallSource::DirectPlaintextMessage
+        } else {
+            ToolCallSource::Direct
+        }
+    }
+
+    fn is_plaintext_message_for_namespace(
+        &self,
+        namespace_matches: impl FnOnce(&str) -> bool,
+    ) -> bool {
+        self.tool_name
+            .namespace
+            .as_deref()
+            .is_some_and(namespace_matches)
             && matches!(
                 self.tool_name.name.as_str(),
                 "spawn_agent" | "send_message" | "followup_task"
@@ -52,11 +76,6 @@ impl ToolCall {
                 .encrypted_function_args
                 .as_ref()
                 .is_some_and(Vec::is_empty)
-        {
-            ToolCallSource::DirectPlaintextMessage
-        } else {
-            ToolCallSource::Direct
-        }
     }
 }
 
@@ -77,6 +96,7 @@ pub struct ToolRouter {
     tool_mode: ToolMode,
     code_mode_tool_names: BTreeMap<String, ToolName>,
     tool_namespaces_info: Option<TurnToolNamespacesInfo>,
+    child_management_tools: Arc<[ToolName]>,
     can_manage_children: bool,
 }
 
@@ -125,6 +145,7 @@ impl ToolRouter {
             tool_mode,
             code_mode_tool_names,
             tool_namespaces_info,
+            child_management_tools: child_management_tools.to_vec().into(),
             can_manage_children: false,
         };
         router.can_manage_children = !child_management_tools.is_empty()
@@ -170,6 +191,18 @@ impl ToolRouter {
     #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) fn can_manage_children(&self) -> bool {
         self.can_manage_children
+    }
+
+    pub(crate) fn direct_source(&self, call: &ToolCall) -> ToolCallSource {
+        let configured_namespace = self
+            .child_management_tools
+            .iter()
+            .find(|tool| tool.namespace == call.tool_name.namespace)
+            .and_then(|tool| tool.namespace.as_deref());
+        configured_namespace.map_or_else(
+            || call.direct_source(),
+            |namespace| call.direct_source_for_namespace(namespace),
+        )
     }
 
     // Answers if the tool plan lets the model invoke the tool directly, through code mode, or deferred tool search.

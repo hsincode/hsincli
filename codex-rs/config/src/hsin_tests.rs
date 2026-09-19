@@ -98,7 +98,7 @@ fn a_numeric_limit_is_described_exactly_as_it_is_enforced() {
     let policy = config.hsin.fork;
     let description = policy.tool_description();
     // The description is the only channel for the policy, since the reserved
-    // `collaboration.spawn_agent` schema cannot carry an enum. Every value it offers must
+    // A reserved `collaboration.spawn_agent` schema cannot carry an enum. Every value it offers must
     // resolve, and every value it withholds must not.
     assert!(description.contains("from 1 to 3"), "{description}");
     assert!(!description.contains("all"), "{description}");

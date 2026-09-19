@@ -65,7 +65,7 @@ use crate::tools::router::ToolSuggestPresentation;
 use crate::tools::spec_plan::append_source_tools;
 use crate::tools::spec_plan::build_core_tool_registry;
 
-const MULTI_AGENT_V2_NAMESPACE: &str = "collaboration";
+const MULTI_AGENT_V2_NAMESPACE: &str = "agents";
 
 #[derive(Default)]
 struct ToolPlanInputs {
@@ -2861,7 +2861,9 @@ async fn multi_agent_v2_can_disable_wait_agent() {
         ]
     );
     plan.assert_visible_lacks(&["clock"]);
-    plan.assert_registered_lacks(&["collaboration.wait_agent", "clock.sleep"]);
+    let wait_agent_tool_name =
+        ToolName::namespaced(MULTI_AGENT_V2_NAMESPACE, "wait_agent").to_string();
+    plan.assert_registered_lacks(&[wait_agent_tool_name.as_str(), "clock.sleep"]);
     assert!(plan.can_manage_children);
 }
 
@@ -2929,28 +2931,29 @@ async fn v1_multi_agent_tools_defer_when_tool_search_available() {
 
 #[tokio::test]
 async fn multi_agent_v2_can_use_configured_tool_namespace() {
+    let configured_namespace = "custom_agents";
     let namespaced = probe(|turn| {
         set_feature(turn, Feature::MultiAgentV2, /*enabled*/ true);
         update_config(turn, |config| {
-            config.multi_agent_v2.tool_namespace = Some("agents".to_string());
+            config.multi_agent_v2.tool_namespace = Some(configured_namespace.to_string());
         });
     })
     .await;
 
-    namespaced.assert_visible_contains(&["agents"]);
+    namespaced.assert_visible_contains(&[configured_namespace]);
     namespaced.assert_visible_lacks(&["assign_task"]);
     assert!(
         !namespaced
             .registered_names
-            .contains(&ToolName::namespaced("agents", "assign_task").to_string()),
+            .contains(&ToolName::namespaced(configured_namespace, "assign_task").to_string()),
         "expected no namespaced runtime for assign_task"
     );
     assert!(
         !namespaced
-            .namespace_function_names("agents")
+            .namespace_function_names(configured_namespace)
             .iter()
             .any(|name| name == "assign_task"),
-        "expected assign_task to be absent from agents namespace"
+        "expected assign_task to be absent from configured namespace"
     );
     for tool_name in [
         "spawn_agent",
@@ -2964,7 +2967,7 @@ async fn multi_agent_v2_can_use_configured_tool_namespace() {
         assert!(
             namespaced
                 .registered_names
-                .contains(&ToolName::namespaced("agents", tool_name).to_string()),
+                .contains(&ToolName::namespaced(configured_namespace, tool_name).to_string()),
             "expected namespaced runtime for {tool_name}"
         );
         assert!(
@@ -2975,10 +2978,10 @@ async fn multi_agent_v2_can_use_configured_tool_namespace() {
         );
         assert!(
             namespaced
-                .namespace_function_names("agents")
+                .namespace_function_names(configured_namespace)
                 .iter()
                 .any(|name| name == tool_name),
-            "expected {tool_name} in agents namespace"
+            "expected {tool_name} in configured namespace"
         );
     }
 }
