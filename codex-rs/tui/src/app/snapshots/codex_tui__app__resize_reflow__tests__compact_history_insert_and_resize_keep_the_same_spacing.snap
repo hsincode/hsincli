@@ -1,16 +1,32 @@
 ---
 source: tui/src/app/resize_reflow_tests.rs
-assertion_line: 31
+assertion_line: 56
 expression: "snapshots.join(\"\\n---\\n\")"
 ---
 › Show results
+
 ● First paragraph
   
   Second paragraph
+
+● Ran first check
+  └ passed
+
+● Ran second check
+  └ passed
+
 ● Spawned subagent review (model: child)
 ---
 › Show results
+
 ● First paragraph
   
   Second paragraph
+
+● Ran first check
+  └ passed
+
+● Ran second check
+  └ passed
+
 ● Spawned subagent review (model: child)

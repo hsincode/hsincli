@@ -32,6 +32,7 @@ use crate::key_hint::KeyBindingListExt;
 use crate::keymap::KeymapContext;
 use crate::keymap::KeymapContextSet;
 use crate::keymap::RuntimeKeymap;
+use crate::render::bullet::BulletStyle;
 use crate::render::renderable::FlexRenderable;
 use crate::render::renderable::Renderable;
 use crate::render::renderable::RenderableItem;
@@ -1973,12 +1974,16 @@ impl BottomPane {
     }
 
     fn as_renderable(&'_ self) -> RenderableItem<'_> {
-        self.as_renderable_with_composer_right_reserve(/*composer_right_reserve*/ 0)
+        self.as_renderable_with_composer_right_reserve(
+            /*composer_right_reserve*/ 0,
+            BulletStyle::Small,
+        )
     }
 
     pub(crate) fn as_renderable_with_composer_right_reserve(
         &'_ self,
         composer_right_reserve: u16,
+        bullet_style: BulletStyle,
     ) -> RenderableItem<'_> {
         if (self.is_task_running || !self.view_stack.is_empty())
             && let Some(banner) = &self.inline_banner
@@ -2070,7 +2075,13 @@ impl BottomPane {
                 );
             }
             let mut flex2 = FlexRenderable::new();
-            flex2.push(/*flex*/ 1, RenderableItem::Owned(flex.into()));
+            flex2.push(
+                /*flex*/ 1,
+                RenderableItem::Owned(Box::new(crate::render::bullet::StatusBullets {
+                    child: RenderableItem::Owned(flex.into()),
+                    style: bullet_style,
+                })),
+            );
             let composer: RenderableItem<'_> = if let Some(questions) = question_editor {
                 RenderableItem::Borrowed(questions.as_ref())
             } else if composer_right_reserve == 0 {

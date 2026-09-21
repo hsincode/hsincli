@@ -23,6 +23,14 @@ async fn compact_history_insert_and_resize_keep_the_same_spacing() {
             vec![Line::from(""), Line::from("Second paragraph")],
             /*is_first_line*/ false,
         )),
+        Arc::new(PlainHistoryCell::new(vec![
+            Line::from("• Ran first check"),
+            Line::from("  └ passed"),
+        ])),
+        Arc::new(PlainHistoryCell::new(vec![
+            Line::from("• Ran second check"),
+            Line::from("  └ passed"),
+        ])),
         Arc::new(PlainHistoryCell::new(vec![Line::from(
             "• Spawned subagent review (model: child)",
         )])),

@@ -92,9 +92,9 @@ impl App {
         let mut display =
             cell.display_hyperlink_lines_for_mode(width, self.chat_widget.history_render_mode());
         if !display.is_empty() && !cell.is_stream_continuation() {
-            if self.has_emitted_history_lines
-                && !self.chat_widget.history_render_mode().is_compact()
-            {
+            // Even compact history needs a boundary between independent actions. Streaming
+            // continuations keep their original paragraph spacing through the outer guard.
+            if self.has_emitted_history_lines {
                 display.insert(/*index*/ 0, HyperlinkLine::new(Line::from("")));
             } else {
                 self.has_emitted_history_lines = true;
@@ -622,8 +622,7 @@ impl App {
         let mut reflowed_lines = Vec::new();
         for display in cell_displays {
             if !display.lines.is_empty() && !display.is_stream_continuation {
-                if has_emitted_history_lines && !self.chat_widget.history_render_mode().is_compact()
-                {
+                if has_emitted_history_lines {
                     reflowed_lines.push(HyperlinkLine::new(Line::from("")));
                 } else {
                     has_emitted_history_lines = true;

@@ -6,6 +6,35 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 #[tokio::test]
+async fn large_bullets_apply_to_status_and_queue_without_changing_composer_text() {
+    let (mut widget, _sender, _events, _operations) = make_chatwidget_manual_with_sender().await;
+    widget.local_settings.tui.large_bullets = true;
+    widget.bottom_pane.set_task_running(/*running*/ true);
+    widget.bottom_pane.set_pending_input_preview(
+        vec!["• queued text".into()],
+        Vec::new(),
+        Vec::new(),
+    );
+    widget
+        .bottom_pane
+        .set_composer_text("• draft text".into(), Vec::new(), Vec::new());
+    let frame = render_frame(&widget, /*width*/ 80);
+    assert!(contains_text(&frame, "● Working") || contains_text(&frame, "○ Working"));
+    assert!(contains_text(&frame, "● Queued follow-up inputs"));
+    assert!(contains_text(&frame, "• queued text"));
+    assert!(contains_text(&frame, "• draft text"));
+
+    widget.bottom_pane.set_task_running(/*running*/ false);
+    widget
+        .bottom_pane
+        .set_hook_status_message(Some("running hook".into()));
+    assert!(contains_text(
+        &render_frame(&widget, /*width*/ 80),
+        "● Running hook"
+    ));
+}
+
+#[tokio::test]
 async fn active_history_uses_compact_spacing_and_large_markers() {
     let (mut widget, _sender, _events, _operations) = make_chatwidget_manual_with_sender().await;
     widget.local_settings.tui.compact_mode = true;
@@ -30,7 +59,8 @@ async fn active_history_uses_compact_spacing_and_large_markers() {
                 .to_string()
         })
         .collect();
-    insta::assert_snapshot!(rows[..3].join("\n"));
+    assert_eq!(rows[0], "");
+    insta::assert_snapshot!(rows[..4].join("\n"));
     assert_eq!(
         widget
             .transcript

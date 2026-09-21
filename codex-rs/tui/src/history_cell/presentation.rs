@@ -5,6 +5,7 @@ use super::HistoryRenderMode;
 use super::McpToolCallCell;
 use super::UserHistoryCell;
 use crate::exec_cell::ExecCell;
+use crate::render::bullet::BulletStyle;
 use crate::terminal_hyperlinks::HyperlinkLine;
 use codex_config::types::Tui;
 use ratatui::style::Stylize;
@@ -28,13 +29,6 @@ impl HistoryRenderMode {
         } else {
             Self::Rich
         }
-    }
-
-    pub(crate) fn is_compact(self) -> bool {
-        matches!(
-            self,
-            Self::Styled(HistoryPresentation { compact: true, .. })
-        )
     }
 }
 
@@ -74,10 +68,17 @@ impl HistoryPresentation {
                 // Only column-zero markers belong to the UI. Bullets in Markdown, output,
                 // and code are indented and must retain their original text and styling.
                 if let Some(span) = line.line.spans.iter_mut().find(|s| !s.content.is_empty())
-                    && let Some(rest) = span.content.strip_prefix('•')
+                    && let Some(marker) = span
+                        .content
+                        .chars()
+                        .next()
+                        .filter(|c| matches!(c, '•' | '◦'))
                 {
                     // Both markers occupy one terminal column, preserving hyperlink ranges.
-                    span.content = format!("●{rest}").into();
+                    let rest = &span.content[marker.len_utf8()..];
+                    let marker =
+                        BulletStyle::Large.marker(if marker == '•' { "•" } else { "◦" });
+                    span.content = format!("{marker}{rest}").into();
                 }
             }
         }

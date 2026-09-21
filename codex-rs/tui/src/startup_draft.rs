@@ -35,6 +35,7 @@ use crate::key_hint;
 use crate::keymap::RuntimeKeymap;
 use crate::legacy_core::config::Config;
 use crate::render::Insets;
+use crate::render::bullet::BulletStyle;
 use crate::render::renderable::FlexRenderable;
 use crate::render::renderable::Renderable;
 use crate::render::renderable::RenderableExt;
@@ -490,7 +491,10 @@ fn startup_draft_renderable<'a>(
     renderable.push(
         /*flex*/ 0,
         bottom_pane
-            .as_renderable_with_composer_right_reserve(/*composer_right_reserve*/ 0)
+            .as_renderable_with_composer_right_reserve(
+                /*composer_right_reserve*/ 0,
+                BulletStyle::Small,
+            )
             .inset(Insets::tlbr(
                 /*top*/ u16::from(loading_message.is_none()),
                 /*left*/ 0,

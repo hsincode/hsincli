@@ -318,10 +318,7 @@ fn rendered_history_rows(
     .into_iter()
     .fold(rendered_rows, |rows, cell| {
         let height = usize::from(cell.desired_height_for_mode(width, mode));
-        rows + height
-            + usize::from(
-                height != 0 && rows != 0 && !cell.is_stream_continuation() && !mode.is_compact(),
-            )
+        rows + height + usize::from(height != 0 && rows != 0 && !cell.is_stream_continuation())
     })
 }
 

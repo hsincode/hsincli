@@ -4,6 +4,7 @@ use super::transcript::ActiveCellLayoutCache;
 use super::transcript::ActiveCellLayoutCacheKey;
 use super::*;
 use crate::render::RectExt;
+use crate::render::bullet::BulletStyle;
 use crate::terminal_hyperlinks::HyperlinkParagraph;
 use crate::wrapping::RtOptions;
 use crate::wrapping::word_wrap_lines;
@@ -120,14 +121,16 @@ impl ExternalWriterNotice {
 
 impl ChatWidget {
     pub(crate) fn as_renderable(&self) -> RenderableItem<'_> {
+        let bullet_style = BulletStyle::from_large_bullets(self.local_settings.tui.large_bullets);
         if self
             .bottom_pane
             .selected_index_for_active_view(crate::app::AGENTS_OVERVIEW_VIEW_ID)
             .is_some()
         {
-            return self
-                .bottom_pane
-                .as_renderable_with_composer_right_reserve(/*composer_right_reserve*/ 0);
+            return self.bottom_pane.as_renderable_with_composer_right_reserve(
+                /*composer_right_reserve*/ 0,
+                bullet_style,
+            );
         }
 
         let active_cell_right_reserve = self.ambient_pet_wrap_reserved_cols();
@@ -135,9 +138,7 @@ impl ChatWidget {
             Some(cell) => RenderableItem::Owned(Box::new(TranscriptAreaRenderable {
                 child: cell.as_ref(),
                 // The initial header becomes the first history cell, which has no leading separator.
-                top: if self.history_render_mode().is_compact()
-                    || cell.as_any().is::<history_cell::SessionHeaderHistoryCell>()
-                {
+                top: if cell.as_any().is::<history_cell::SessionHeaderHistoryCell>() {
                     0
                 } else {
                     1
@@ -203,7 +204,7 @@ impl ChatWidget {
             }))
         } else {
             self.bottom_pane
-                .as_renderable_with_composer_right_reserve(active_cell_right_reserve)
+                .as_renderable_with_composer_right_reserve(active_cell_right_reserve, bullet_style)
         };
         flex.push(
             /*flex*/ 0,

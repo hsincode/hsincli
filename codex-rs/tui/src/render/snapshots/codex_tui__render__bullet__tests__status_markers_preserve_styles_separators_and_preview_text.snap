@@ -1,0 +1,16 @@
+---
+source: tui/src/render/bullet_tests.rs
+assertion_line: 26
+expression: "snapshots.join(\"\\n---\\n\")"
+---
+• Working (0s • esc to interrupt)
+◦ Working (1s • esc to interrupt)
+• Queued follow-up inputs
+  ↳ • user text
+• Running hook
+---
+● Working (0s • esc to interrupt)
+○ Working (1s • esc to interrupt)
+● Queued follow-up inputs
+  ↳ • user text
+● Running hook
