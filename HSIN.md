@@ -7,8 +7,8 @@ The canonical repository is [hsincode/hsincli](https://github.com/hsincode/hsinc
 with `main` as the default branch. It replaces the former Codeberg repository.
 `origin` points to this GitHub repository; `upstream` points to `openai/codex`.
 
-The fork retains three changes: an independent `~/.hsin` home, configurable
-subagent history inheritance, and HsinCLI command/session branding. Rendering,
+The fork retains an independent `~/.hsin` home, configurable subagent history
+inheritance and model selection, and HsinCLI command/session branding. Rendering,
 themes, input controls, and stream processing follow the upstream release.
 
 ## Build and Install
@@ -62,6 +62,27 @@ max_turns = 3
 Multi-Agent V2 tools use the `agents` namespace by default. Some models reserve
 `collaboration` for a server-configured schema; choose a different namespace unless
 the model explicitly supports that schema.
+
+To let parents choose a child model for each task, including calling Sol for
+harder work while using Luna by default, set:
+
+```toml
+[hsin]
+subagent_model_selection = "auto"
+
+[agents]
+default_subagent_model = "gpt-5.6-luna"
+default_subagent_reasoning_effort = "max"
+```
+
+`"explicit"` (the default) restores the upstream guidance: model overrides need
+an explicit user, AGENTS.md, or skill instruction. `"auto"` permits autonomous
+selection among the available models and preserves the configured child effort
+when only the model changes. This controls V2 model-facing guidance, not an
+authorization check on tool arguments or permission to spawn agents. Custom
+root/subagent role instructions take precedence. Model overrides must be exposed,
+and full-history forks still cannot change model or effort. Restart the session
+after changing this setting.
 
 V2 `fork_turns` accepts `"none"`, `"all"`, or a positive integer string.
 Omitted or blank values use `default_turns`, which defaults to one recent

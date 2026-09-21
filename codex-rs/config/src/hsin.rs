@@ -9,6 +9,18 @@ use std::num::NonZeroUsize;
 #[serde(default)]
 pub struct HsinConfig {
     pub fork: ForkPolicy,
+    /// V2 guidance for choosing child models; explicit preserves upstream behavior.
+    pub subagent_model_selection: SubagentModelSelection,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum SubagentModelSelection {
+    /// Change models only when requested by the user, AGENTS.md, or a skill.
+    #[default]
+    Explicit,
+    /// Let the parent choose an available model to suit each delegated task.
+    Auto,
 }
 
 impl HsinConfig {

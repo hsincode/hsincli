@@ -59,6 +59,8 @@ max_turns = 3
 
 `model_reasoning_levels` は `/model` と `/effort` の選択肢を広げるだけで、モデル側の対応を変えるものではありません。`ultra` を追加する場合は `features.multi_agent_v2 = true` も設定してください。カタログ上 v1 のモデルでは Ultra は委譲を行わず、Max 相当の推論として送信されます。
 
+`[hsin]` の `subagent_model_selection = "auto"` で、V2 の親エージェントがタスクに応じて Sol などの委譲先モデルを選べます。`"explicit"`（既定）に戻すと、ユーザー・AGENTS.md・スキルから明示された場合だけモデルを変更する従来の指示になります。モデルだけを変更した場合、`agents.default_subagent_reasoning_effort` が適用されます。設定変更後はセッションを開始し直してください。
+
 設定例は [`hsin.example.toml`](hsin.example.toml)、詳細は [`HSIN.md`](HSIN.md) を参照してください。
 
 ## 開発

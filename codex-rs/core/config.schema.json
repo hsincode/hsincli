@@ -2058,6 +2058,15 @@
             "default_turns": 1,
             "max_turns": null
           }
+        },
+        "subagent_model_selection": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/SubagentModelSelection"
+            }
+          ],
+          "default": "explicit",
+          "description": "V2 guidance for choosing child models; explicit preserves upstream behavior."
         }
       },
       "type": "object"
@@ -3826,6 +3835,24 @@
           "description": "Register sleep regardless of the model or legacy clock configuration.",
           "enum": [
             "always_on"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "SubagentModelSelection": {
+      "oneOf": [
+        {
+          "description": "Change models only when requested by the user, AGENTS.md, or a skill.",
+          "enum": [
+            "explicit"
+          ],
+          "type": "string"
+        },
+        {
+          "description": "Let the parent choose an available model to suit each delegated task.",
+          "enum": [
+            "auto"
           ],
           "type": "string"
         }
@@ -6795,9 +6822,10 @@
           "allow_all": false,
           "default_turns": 1,
           "max_turns": null
-        }
+        },
+        "subagent_model_selection": "explicit"
       },
-      "description": "HsinCLI subagent history policy."
+      "description": "HsinCLI subagent history and model-selection policies."
     },
     "include_apps_instructions": {
       "description": "Whether to inject the `<apps_instructions>` developer block.",

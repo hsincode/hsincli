@@ -1,6 +1,7 @@
 use crate::config::MultiAgentV2Config;
 use crate::context::MultiAgentRoleInstructions;
 use crate::session::step_context::StepContext;
+use codex_config::hsin::SubagentModelSelection;
 use codex_protocol::config_types::MultiAgentMode;
 use codex_protocol::openai_models::MultiAgentRoleMessages;
 use codex_protocol::openai_models::ReasoningEffort;
@@ -47,6 +48,9 @@ Payload:
 ```
 You may also see them addressed as to=/root/..., which indicates your identity is /root/...
 "#;
+// Let the parent escalate difficult subtasks without requiring the user to route each one.
+// Keep effort independent so choosing a stronger model preserves configured subagent effort.
+const AUTO_MULTI_AGENT_V2_MODEL_OVERRIDE_USAGE_HINT_TEXT: &str = "You may select any available `model` for a sub-agent based on the task without asking the user. Prefer the configured default for routine work; choose a more capable model when a subtask needs deeper reasoning or independent verification. Respect user-specified model constraints. Omit `reasoning_effort` to use the configured subagent effort unless the user, applicable `AGENTS.md` instructions, or skill instructions request an override. Full-history forks, when permitted by the configured fork_turns policy, inherit the parent model and reasoning effort and do not accept overrides. When setting `model` or `reasoning_effort`, set `fork_turns` to `\"none\"` or a positive integer string.";
 const DEFAULT_MULTI_AGENT_V2_MODEL_OVERRIDE_USAGE_HINT_TEXT: &str = "Full-history forks, when permitted by the configured fork_turns policy, inherit the parent model and reasoning effort and do not accept overrides. Only set `model` or `reasoning_effort` when explicitly requested by the user, applicable `AGENTS.md` instructions, or skill instructions; when doing so, set `fork_turns` to `\"none\"` or a positive integer string.";
 const DEFAULT_MULTI_AGENT_V2_WAIT_AGENT_USAGE_HINT_TEXT: &str =
     "When calling `wait_agent`, prefer longer waits (minutes) to avoid busy polling.";
@@ -137,7 +141,12 @@ pub(crate) fn resolve_usage_hints(
         );
         if config.expose_spawn_agent_model_overrides {
             text.push_str("\n\n");
-            text.push_str(DEFAULT_MULTI_AGENT_V2_MODEL_OVERRIDE_USAGE_HINT_TEXT);
+            text.push_str(match config.subagent_model_selection {
+                SubagentModelSelection::Explicit => {
+                    DEFAULT_MULTI_AGENT_V2_MODEL_OVERRIDE_USAGE_HINT_TEXT
+                }
+                SubagentModelSelection::Auto => AUTO_MULTI_AGENT_V2_MODEL_OVERRIDE_USAGE_HINT_TEXT,
+            });
         }
 
         Some(if catalog.is_some() {

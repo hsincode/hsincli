@@ -68,6 +68,7 @@ fn hsin_default_and_full_history_opt_in() {
 #[test]
 fn hsin_rejects_invalid_configuration_before_spawning() {
     for input in [
+        "[hsin]\nsubagent_model_selection = 'invalid'",
         "[hsin.fork]\ndefault_turns = 0",
         "[hsin.fork]\nmax_turns = 0",
         "[hsin.fork]\nallow_al = true",

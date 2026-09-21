@@ -1,9 +1,119 @@
 use super::*;
 use codex_config::hsin::ForkTurns;
+use codex_config::hsin::SubagentModelSelection;
 use core_test_support::responses::mount_sse_once;
 use pretty_assertions::assert_eq;
 use std::num::NonZeroUsize;
 use test_case::test_case;
+
+#[test_case("none", "auto"; "auto fresh child")]
+#[test_case("1", "auto"; "auto recent history child")]
+#[test_case("none", "explicit"; "explicit fresh child")]
+#[test_case("1", "explicit"; "explicit recent history child")]
+#[test_case("none", ""; "default fresh child")]
+#[test_case("1", ""; "default recent history child")]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parent_selects_sol_while_preserving_configured_max_effort(
+    fork_turns: &str,
+    selection: &'static str,
+) -> Result<()> {
+    let server = start_mock_server().await;
+    let test = test_codex()
+        .with_pre_build_hook(move |home| {
+            let config = if selection.is_empty() {
+                String::new()
+            } else {
+                format!("[hsin]\nsubagent_model_selection = {selection:?}\n")
+            };
+            fs::write(home.join("config.toml"), config).expect("write selection config");
+        })
+        .with_config(|config| {
+            config
+                .features
+                .enable(Feature::MultiAgentV2)
+                .expect("enable V2");
+            config.model = Some(REQUESTED_MODEL.into());
+            config.model_reasoning_effort = Some(ReasoningEffort::Max);
+            config.agent_default_subagent_model = Some(REQUESTED_MODEL.into());
+            config.agent_default_subagent_reasoning_effort = Some(ReasoningEffort::Max);
+            config.multi_agent_v2.expose_spawn_agent_model_overrides = true;
+        })
+        .build_with_auto_env(&server)
+        .await?;
+
+    let spawn = mount_sse_once(
+        &server,
+        sse(vec![
+            ev_function_call_with_namespace(
+                SPAWN_CALL_ID,
+                MULTI_AGENT_V2_NAMESPACE,
+                "spawn_agent",
+                &json!({
+                    "task_name": "verify",
+                    "message": "Check the concurrency invariant independently.",
+                    "model": V2_REQUESTED_MODEL,
+                    "fork_turns": fork_turns,
+                })
+                .to_string(),
+            ),
+            ev_completed("spawn"),
+        ]),
+    )
+    .await;
+    // Route by model because the parent continuation and child request can race.
+    let child = mount_sse_once_match(
+        &server,
+        |req: &wiremock::Request| {
+            decoded_body(req)
+                .and_then(|body| serde_json::from_slice::<Value>(&body).ok())
+                .is_some_and(|body| body["model"] == V2_REQUESTED_MODEL)
+        },
+        sse(vec![
+            ev_assistant_message("child", "Invariant checked."),
+            ev_completed("child"),
+        ]),
+    )
+    .await;
+    let parent = mount_sse_once(&server, sse(vec![ev_completed("parent")])).await;
+    let (expected_selection, guidance, prompt) = if selection == "auto" {
+        (
+            SubagentModelSelection::Auto,
+            "You may select any available `model` for a sub-agent based on the task without asking the user.",
+            "Investigate the concurrency bug and delegate verification as needed.",
+        )
+    } else {
+        (
+            SubagentModelSelection::Explicit,
+            "Only set `model` or `reasoning_effort` when explicitly requested by the user",
+            "Investigate the concurrency bug and delegate verification to gpt-5.6-sol.",
+        )
+    };
+    test.submit_turn(prompt).await?;
+
+    // Check the loaded policy and actual model input, not just TOML deserialization.
+    assert_eq!(
+        test.config.multi_agent_v2.subagent_model_selection,
+        expected_selection
+    );
+    let parent_request = spawn.single_request();
+    assert!(parent_request.body_contains_text(guidance));
+    assert!(parent_request.body_contains_text(V2_REQUESTED_MODEL));
+    let child_request = wait_for_request_with_model(&child, V2_REQUESTED_MODEL).await?;
+    assert!(child_request.body_contains_text(guidance));
+    let body = child_request.body_json();
+    assert_eq!(
+        (&body["model"], &body["reasoning"]["effort"]),
+        (&json!(V2_REQUESTED_MODEL), &json!("max"))
+    );
+    assert!(
+        parent
+            .single_request()
+            .function_call_output(SPAWN_CALL_ID)
+            .to_string()
+            .contains("/root/verify")
+    );
+    Ok(())
+}
 
 // Exercise the real tool dispatch and inspect the child's outgoing model input,
 // so a policy that only changes schema text cannot satisfy these tests.
