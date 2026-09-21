@@ -5,6 +5,43 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
+#[tokio::test]
+async fn active_history_uses_compact_spacing_and_large_markers() {
+    let (mut widget, _sender, _events, _operations) = make_chatwidget_manual_with_sender().await;
+    widget.local_settings.tui.compact_mode = true;
+    widget.local_settings.tui.large_bullets = true;
+    widget.transcript.active_cell = Some(Box::new(history_cell::AgentMessageCell::new(
+        vec![
+            "First paragraph".into(),
+            "".into(),
+            "Second paragraph".into(),
+        ],
+        /*is_first_line*/ true,
+    )));
+    let frame = render_frame(&widget, /*width*/ 40);
+    let rows: Vec<_> = frame
+        .content
+        .chunks(40)
+        .map(|row| {
+            row.iter()
+                .map(ratatui::buffer::Cell::symbol)
+                .collect::<String>()
+                .trim_end()
+                .to_string()
+        })
+        .collect();
+    insta::assert_snapshot!(rows[..3].join("\n"));
+    assert_eq!(
+        widget
+            .transcript
+            .active_cell_layout
+            .get()
+            .unwrap()
+            .desired_height,
+        Some(3)
+    );
+}
+
 #[derive(Debug)]
 struct CountingHistoryCell {
     desired_height_calls: Arc<AtomicUsize>,
@@ -139,6 +176,7 @@ fn active_transcript_preserves_clipped_markdown_hyperlinks() {
         child: &cell,
         top: 1,
         right: 2,
+        render_mode: HistoryRenderMode::Rich,
         persistent_layout: None,
     };
     let area = Rect::new(

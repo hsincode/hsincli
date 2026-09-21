@@ -613,6 +613,46 @@ async fn thread_settings_updated_preserves_default_settings_for_plan_mode() {
 }
 
 #[tokio::test]
+async fn v2_subagent_start_uses_cached_model_after_navigation_refresh() {
+    let (mut chat, mut rx, _ops) = make_chatwidget_manual(Some("parent-model")).await;
+    let child_id = ThreadId::new();
+    chat.set_collab_agent_metadata(
+        child_id,
+        /*agent_nickname*/ None,
+        /*agent_role*/ None,
+        Some("child-model".into()),
+    );
+    chat.set_collab_agent_metadata(
+        child_id,
+        Some("review".into()),
+        /*agent_role*/ None,
+        /*model*/ None,
+    );
+    chat.handle_server_notification(
+        ServerNotification::ItemCompleted(ItemCompletedNotification {
+            thread_id: "thread-1".into(),
+            turn_id: "turn-1".into(),
+            completed_at_ms: 0,
+            item: AppServerThreadItem::SubAgentActivity {
+                id: "activity".into(),
+                kind: codex_app_server_protocol::SubAgentActivityKind::Started,
+                agent_thread_id: child_id.to_string(),
+                agent_path: "/root/review".into(),
+            },
+        }),
+        /*replay_kind*/ None,
+    );
+    let cells = drain_insert_history(&mut rx);
+    insta::assert_snapshot!(
+        cells
+            .iter()
+            .map(|lines| lines_to_single_string(lines))
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+}
+
+#[tokio::test]
 async fn collab_spawn_end_shows_requested_model_and_effort() {
     let (mut chat, mut rx, _ops) = make_chatwidget_manual(/*model_override*/ None).await;
     let sender_thread_id = ThreadId::new();
@@ -621,6 +661,7 @@ async fn collab_spawn_end_shows_requested_model_and_effort() {
         spawned_thread_id,
         Some("Robie".to_string()),
         Some("explorer".to_string()),
+        /*model*/ None,
     );
 
     chat.handle_server_notification(
@@ -676,7 +717,7 @@ async fn collab_spawn_end_shows_requested_model_and_effort() {
         .join("\n");
 
     assert!(
-        rendered.contains("Spawned Robie [explorer] (gpt-5 high)"),
+        rendered.contains("Spawned subagent Robie [explorer] (model: gpt-5, high)"),
         "expected spawn line to include agent metadata and requested model, got {rendered:?}"
     );
 }
@@ -1229,11 +1270,13 @@ async fn live_app_server_collab_wait_items_render_history() {
         receiver_thread_id,
         Some("Robie".to_string()),
         Some("explorer".to_string()),
+        /*model*/ None,
     );
     chat.set_collab_agent_metadata(
         other_receiver_thread_id,
         Some("Ada".to_string()),
         Some("reviewer".to_string()),
+        /*model*/ None,
     );
 
     chat.handle_server_notification(

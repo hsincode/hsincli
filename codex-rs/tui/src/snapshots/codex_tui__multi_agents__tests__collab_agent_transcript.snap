@@ -1,8 +1,9 @@
 ---
 source: tui/src/multi_agents.rs
+assertion_line: 837
 expression: snapshot
 ---
-• Spawned Robie [explorer] (gpt-5 high)
+• Spawned subagent Robie [explorer] (model: gpt-5, high)
   └ Compute 11! and reply with just the integer result.
 
 • Sent input to Robie [explorer]

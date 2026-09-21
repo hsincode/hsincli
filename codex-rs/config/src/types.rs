@@ -783,6 +783,15 @@ pub struct Tui {
     #[serde(default)]
     pub raw_output_mode: bool,
 
+    /// Reduce history spacing and shorten tool previews. Full output remains in the transcript.
+    /// Defaults to `false`.
+    #[serde(default)]
+    pub compact_mode: bool,
+
+    /// Use `●` instead of `•` for top-level history markers. Defaults to `false`.
+    #[serde(default)]
+    pub large_bullets: bool,
+
     /// Controls whether the TUI uses the terminal's alternate screen buffer.
     ///
     /// - `auto` (default): Use alternate screen.

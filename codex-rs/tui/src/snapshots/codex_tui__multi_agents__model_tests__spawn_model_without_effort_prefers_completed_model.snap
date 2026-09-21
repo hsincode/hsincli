@@ -1,0 +1,6 @@
+---
+source: tui/src/multi_agents_model_tests.rs
+assertion_line: 30
+expression: "cell.display_lines(100).iter().map(ToString::to_string).collect::<Vec<_>>().join(\"\\n\")"
+---
+• Spawned subagent review [worker] (model: child-model)

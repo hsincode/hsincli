@@ -139,9 +139,13 @@ pub(crate) use startup_warnings::StartupWarningsCell;
 #[cfg(test)]
 mod tests;
 
+mod presentation;
+use presentation::HistoryPresentation;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum HistoryRenderMode {
     Rich,
+    Styled(HistoryPresentation),
     Raw,
 }
 
@@ -197,10 +201,7 @@ pub(crate) trait HistoryCell: std::fmt::Debug + Send + Sync + Any {
     }
 
     fn display_lines_for_mode(&self, width: u16, mode: HistoryRenderMode) -> Vec<Line<'static>> {
-        match mode {
-            HistoryRenderMode::Rich => visible_lines(self.display_hyperlink_lines(width)),
-            HistoryRenderMode::Raw => self.raw_lines(),
-        }
+        visible_lines(self.display_hyperlink_lines_for_mode(width, mode))
     }
 
     fn display_hyperlink_lines_for_mode(
@@ -210,6 +211,9 @@ pub(crate) trait HistoryCell: std::fmt::Debug + Send + Sync + Any {
     ) -> Vec<HyperlinkLine> {
         match mode {
             HistoryRenderMode::Rich => self.display_hyperlink_lines(width),
+            HistoryRenderMode::Styled(presentation) => {
+                presentation.apply(self, self.display_hyperlink_lines(width))
+            }
             HistoryRenderMode::Raw => plain_hyperlink_lines(self.raw_lines()),
         }
     }

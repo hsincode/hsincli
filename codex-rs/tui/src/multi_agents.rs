@@ -57,6 +57,8 @@ pub(crate) struct AgentMetadata {
     pub(crate) agent_nickname: Option<String>,
     /// Agent type shown in brackets when present, for example `worker`.
     pub(crate) agent_role: Option<String>,
+    /// Child model from thread metadata; v2 activity events carry only the agent path.
+    pub(crate) model: Option<String>,
 }
 
 #[derive(Clone, Copy)]
@@ -69,7 +71,7 @@ struct AgentLabel<'a> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SpawnRequestSummary {
     pub(crate) model: String,
-    pub(crate) reasoning_effort: ReasoningEffortConfig,
+    pub(crate) reasoning_effort: Option<ReasoningEffortConfig>,
 }
 
 pub(crate) fn agent_picker_status_dot_spans(is_closed: bool) -> Vec<Span<'static>> {
@@ -190,7 +192,7 @@ pub(crate) fn spawn_request_summary(item: &ThreadItem) -> Option<SpawnRequestSum
         ThreadItem::CollabAgentToolCall {
             tool: CollabAgentTool::SpawnAgent,
             model: Some(model),
-            reasoning_effort: Some(reasoning_effort),
+            reasoning_effort,
             ..
         } => Some(SpawnRequestSummary {
             model: model.clone(),
@@ -233,7 +235,8 @@ pub(crate) fn tool_call_history_cell(
                 return None;
             }
             let fallback_spawn_request = spawn_request_summary(item);
-            let spawn_request = cached_spawn_request.or(fallback_spawn_request.as_ref());
+            // Completion can report the resolved model after role defaults or fallback.
+            let spawn_request = fallback_spawn_request.as_ref().or(cached_spawn_request);
             Some(spawn_end(
                 first_receiver,
                 prompt,
@@ -305,17 +308,29 @@ pub(crate) fn sub_agent_activity_display(item: &ThreadItem) -> Option<SubAgentAc
     })
 }
 
-pub(crate) fn sub_agent_activity_history_cell(item: &ThreadItem) -> Option<PlainHistoryCell> {
+pub(crate) fn sub_agent_activity_history_cell(
+    item: &ThreadItem,
+    agent_model: Option<&str>,
+    parent_model: &str,
+) -> Option<PlainHistoryCell> {
     let ThreadItem::SubAgentActivity {
         kind, agent_path, ..
     } = item
     else {
         return None;
     };
-    Some(collab_event(
-        sub_agent_activity_title(*kind, agent_path),
-        Vec::new(),
-    ))
+    let mut title = sub_agent_activity_title(*kind, agent_path);
+    if *kind == SubAgentActivityKind::Started
+        && let Some(model) = agent_model.filter(|model| !model.is_empty())
+    {
+        let label = if model == parent_model {
+            format!(" (model: {model})")
+        } else {
+            format!(" (model: {model}, parent: {parent_model})")
+        };
+        title.push_span(label.magenta().bold());
+    }
+    Some(collab_event(title, Vec::new()))
 }
 
 pub(crate) fn sub_agent_activity_summary(kind: SubAgentActivityKind, agent_path: &str) -> String {
@@ -329,7 +344,7 @@ pub(crate) fn sub_agent_activity_summary(kind: SubAgentActivityKind, agent_path:
 
 fn sub_agent_activity_title(kind: SubAgentActivityKind, agent_path: &str) -> Line<'static> {
     let (prefix, path) = match kind {
-        SubAgentActivityKind::Started => ("Started ", agent_path),
+        SubAgentActivityKind::Started => ("Started subagent ", agent_path),
         SubAgentActivityKind::Interacted => ("Interacted with ", agent_path),
         SubAgentActivityKind::Interrupted => ("Interrupted ", agent_path),
         SubAgentActivityKind::Completed => ("Completed ", agent_path),
@@ -348,7 +363,7 @@ fn spawn_end(
 ) -> PlainHistoryCell {
     let title = match new_thread_id {
         Some(thread_id) => title_with_agent(
-            "Spawned",
+            "Spawned subagent",
             agent_label(thread_id, &agent_metadata(thread_id)),
             spawn_request,
         ),
@@ -541,17 +556,14 @@ fn spawn_request_spans(spawn_request: Option<&SpawnRequestSummary>) -> Vec<Span<
     };
 
     let model = spawn_request.model.trim();
-    if model.is_empty() && spawn_request.reasoning_effort == ReasoningEffortConfig::default() {
-        return Vec::new();
-    }
-
-    let details = if model.is_empty() {
-        format!("({})", spawn_request.reasoning_effort)
-    } else {
-        format!("({model} {})", spawn_request.reasoning_effort)
+    let details = match (model.is_empty(), &spawn_request.reasoning_effort) {
+        (true, None) => return Vec::new(),
+        (true, Some(effort)) => format!("(effort: {effort})"),
+        (false, None) => format!("(model: {model})"),
+        (false, Some(effort)) => format!("(model: {model}, {effort})"),
     };
 
-    vec![Span::from(" ").dim(), Span::from(details).magenta()]
+    vec![" ".into(), details.magenta().bold()]
 }
 
 fn prompt_line(prompt: &str) -> Option<Line<'static>> {
@@ -922,7 +934,7 @@ mod tests {
         assert_eq!(title.spans[4].content.as_ref(), "[explorer]");
         assert_eq!(title.spans[4].style.fg, None);
         assert!(!title.spans[4].style.add_modifier.contains(Modifier::DIM));
-        assert_eq!(title.spans[6].content.as_ref(), "(gpt-5 high)");
+        assert_eq!(title.spans[6].content.as_ref(), "(model: gpt-5, high)");
         assert_eq!(title.spans[6].style.fg, Some(Color::Magenta));
     }
 
@@ -968,11 +980,13 @@ mod tests {
             AgentMetadata {
                 agent_nickname: Some("Robie".to_string()),
                 agent_role: Some("explorer".to_string()),
+                ..Default::default()
             }
         } else if thread_id == bob_id {
             AgentMetadata {
                 agent_nickname: Some("Bob".to_string()),
                 agent_role: Some("worker".to_string()),
+                ..Default::default()
             }
         } else {
             AgentMetadata::default()
@@ -995,3 +1009,7 @@ mod tests {
             .join("")
     }
 }
+
+#[cfg(test)]
+#[path = "multi_agents_model_tests.rs"]
+mod model_tests;

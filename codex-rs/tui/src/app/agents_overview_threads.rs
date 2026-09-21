@@ -49,6 +49,14 @@ impl App {
             .and_then(Option::as_mut);
         match notification {
             ServerNotification::ThreadStarted(started) => {
+                // V2 activity rows need the child model before the parent reports its start.
+                // Reuse the pushed metadata so rendering never blocks on another server read.
+                self.chat_widget.set_collab_agent_metadata(
+                    thread_id,
+                    started.thread.agent_nickname.clone(),
+                    started.thread.agent_role.clone(),
+                    started.thread.model.clone(),
+                );
                 if started.thread.ephemeral {
                     return;
                 }

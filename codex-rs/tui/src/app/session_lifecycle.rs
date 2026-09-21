@@ -258,6 +258,11 @@ impl App {
             thread_id,
             agent_nickname.clone(),
             agent_role.clone(),
+            self.agents_overview
+                .threads
+                .get(&thread_id)
+                .and_then(Option::as_ref)
+                .and_then(|thread| thread.model.clone()),
         );
         self.agent_navigation
             .upsert(thread_id, agent_nickname, agent_role, is_closed);
@@ -507,6 +512,11 @@ impl App {
                 thread_id,
                 entry.agent_nickname.clone(),
                 entry.agent_role.clone(),
+                self.agents_overview
+                    .threads
+                    .get(&thread_id)
+                    .and_then(Option::as_ref)
+                    .and_then(|thread| thread.model.clone()),
             );
         }
         self.chat_widget = chat_widget;

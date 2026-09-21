@@ -1,0 +1,8 @@
+---
+source: tui/src/chatwidget/rendering_tests.rs
+assertion_line: 21
+expression: "rows[..3].join(\"\\n\")"
+---
+● First paragraph
+
+  Second paragraph

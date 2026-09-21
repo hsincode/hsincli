@@ -971,7 +971,7 @@ fn token_usage_info_from_app_server(token_usage: ThreadTokenUsage) -> TokenUsage
 }
 
 impl ChatWidget {
-    /// Stores or overwrites the cached nickname and role for a collab agent thread.
+    /// Stores or overwrites the cached nickname, role, and available model for a collab agent thread.
     ///
     /// Called by `App::upsert_agent_picker_thread` and `App::replace_chat_widget` to keep the
     /// rendering metadata in sync with the navigation cache. Must be called before any
@@ -982,14 +982,15 @@ impl ChatWidget {
         thread_id: ThreadId,
         agent_nickname: Option<String>,
         agent_role: Option<String>,
+        model: Option<String>,
     ) {
-        self.collab_agent_metadata.insert(
-            thread_id,
-            AgentMetadata {
-                agent_nickname,
-                agent_role,
-            },
-        );
+        let metadata = self.collab_agent_metadata.entry(thread_id).or_default();
+        metadata.agent_nickname = agent_nickname;
+        metadata.agent_role = agent_role;
+        // Navigation-only refreshes may lack model metadata already received at thread/start.
+        if model.is_some() {
+            metadata.model = model;
+        }
     }
 
     /// Returns the cached metadata for a thread, defaulting to empty if none has been registered.
@@ -1650,7 +1651,7 @@ impl ChatWidget {
         if self.raw_output_mode {
             HistoryRenderMode::Raw
         } else {
-            HistoryRenderMode::Rich
+            HistoryRenderMode::from_tui(&self.local_settings.tui)
         }
     }
 

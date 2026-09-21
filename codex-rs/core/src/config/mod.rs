@@ -777,6 +777,12 @@ pub struct Config {
     /// Start the TUI in raw scrollback mode for copy-friendly transcript output.
     pub tui_raw_output_mode: bool,
 
+    /// Reduce TUI history spacing and tool preview length.
+    pub tui_compact_mode: bool,
+
+    /// Use larger top-level history markers in the TUI.
+    pub tui_large_bullets: bool,
+
     /// Start the TUI in the specified collaboration mode (plan/default).
 
     /// Controls whether the TUI uses the terminal's alternate screen buffer.
@@ -4436,6 +4442,8 @@ impl Config {
                 .as_ref()
                 .map(|t| t.raw_output_mode)
                 .unwrap_or(false),
+            tui_compact_mode: cfg.tui.as_ref().is_some_and(|t| t.compact_mode),
+            tui_large_bullets: cfg.tui.as_ref().is_some_and(|t| t.large_bullets),
             tui_alternate_screen: cfg
                 .tui
                 .as_ref()

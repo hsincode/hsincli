@@ -307,11 +307,7 @@ fn rendered_history_rows(
     } else {
         RawReasoningVisibility::Hidden
     };
-    let mode = if local_settings.tui.raw_output_mode {
-        HistoryRenderMode::Raw
-    } else {
-        HistoryRenderMode::Rich
-    };
+    let mode = HistoryRenderMode::from_tui(&local_settings.tui);
     thread_items_to_transcript_cells(
         Some(thread_id),
         &thread.cwd,
@@ -322,7 +318,10 @@ fn rendered_history_rows(
     .into_iter()
     .fold(rendered_rows, |rows, cell| {
         let height = usize::from(cell.desired_height_for_mode(width, mode));
-        rows + height + usize::from(height != 0 && rows != 0 && !cell.is_stream_continuation())
+        rows + height
+            + usize::from(
+                height != 0 && rows != 0 && !cell.is_stream_continuation() && !mode.is_compact(),
+            )
     })
 }
 

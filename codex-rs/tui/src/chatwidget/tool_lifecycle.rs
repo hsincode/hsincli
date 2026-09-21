@@ -145,7 +145,20 @@ impl ChatWidget {
     }
 
     pub(super) fn on_sub_agent_activity(&mut self, item: ThreadItem) {
-        if let Some(cell) = multi_agents::sub_agent_activity_history_cell(&item) {
+        let ThreadItem::SubAgentActivity {
+            agent_thread_id, ..
+        } = &item
+        else {
+            return;
+        };
+        let model = ThreadId::from_string(agent_thread_id)
+            .ok()
+            .and_then(|id| self.collab_agent_metadata(id).model);
+        if let Some(cell) = multi_agents::sub_agent_activity_history_cell(
+            &item,
+            model.as_deref(),
+            self.current_model(),
+        ) {
             self.on_collab_event(cell);
         }
     }

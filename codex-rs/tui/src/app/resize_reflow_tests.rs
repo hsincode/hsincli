@@ -3,6 +3,53 @@ use crate::app::test_support::make_test_app;
 use crate::history_cell::PlainHistoryCell;
 use pretty_assertions::assert_eq;
 
+#[tokio::test]
+async fn compact_history_insert_and_resize_keep_the_same_spacing() {
+    let mut app = make_test_app().await;
+    app.chat_widget.local_settings.tui.compact_mode = true;
+    app.chat_widget.local_settings.tui.large_bullets = true;
+    let cells: Vec<Arc<dyn HistoryCell>> = vec![
+        Arc::new(crate::history_cell::new_user_prompt(
+            "Show results".into(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+        )),
+        Arc::new(crate::history_cell::AgentMessageCell::new(
+            vec![Line::from("First paragraph")],
+            /*is_first_line*/ true,
+        )),
+        Arc::new(crate::history_cell::AgentMessageCell::new(
+            vec![Line::from(""), Line::from("Second paragraph")],
+            /*is_first_line*/ false,
+        )),
+        Arc::new(PlainHistoryCell::new(vec![Line::from(
+            "• Spawned subagent review (model: child)",
+        )])),
+    ];
+    app.transcript_cells = cells.clone();
+    let mut snapshots = Vec::new();
+    for width in [24, 80] {
+        app.reset_history_emission_state();
+        let inserted: Vec<_> = cells
+            .iter()
+            .flat_map(|cell| app.display_lines_for_history_insert(cell.as_ref(), width))
+            .collect();
+        assert_eq!(
+            app.render_transcript_lines_for_reflow(width).lines,
+            inserted
+        );
+        snapshots.push(
+            inserted
+                .iter()
+                .map(rendered_line_text)
+                .collect::<Vec<_>>()
+                .join("\n"),
+        );
+    }
+    insta::assert_snapshot!(snapshots.join("\n---\n"));
+}
+
 fn plain_history_cells(count: usize) -> Vec<Arc<dyn HistoryCell>> {
     (0..count)
         .map(|index| {

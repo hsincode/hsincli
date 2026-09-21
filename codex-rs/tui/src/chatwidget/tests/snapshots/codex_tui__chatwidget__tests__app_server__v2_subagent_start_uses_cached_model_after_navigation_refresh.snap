@@ -1,0 +1,6 @@
+---
+source: tui/src/chatwidget/tests/app_server.rs
+assertion_line: 636
+expression: "cells.iter().map(|lines|\nlines_to_single_string(lines)).collect::<Vec<_>>().join(\"\\n\")"
+---
+• Started subagent `/root/review` (model: child-model, parent: parent-model)

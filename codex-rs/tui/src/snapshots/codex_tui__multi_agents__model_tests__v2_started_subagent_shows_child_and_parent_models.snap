@@ -1,0 +1,8 @@
+---
+source: tui/src/multi_agents_model_tests.rs
+assertion_line: 47
+expression: "snapshots.join(\"\\n\")"
+---
+• Started subagent `/root/review`
+• Started subagent `/root/review` (model: parent-model)
+• Started subagent `/root/review` (model: child-model, parent: parent-model)
